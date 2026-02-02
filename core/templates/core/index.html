@@ -1,0 +1,828 @@
+<!-- core/templates/core/index.html -->
+{% extends 'core/base.html' %} {% load static %} {% block content %}
+<!-- Hero Section -->
+<section class="hero" id="home">
+  <!-- Background decoration -->
+  <div class="hero-bg">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <!-- Nepal flag colors overlay -->
+    <div class="nepal-flag-overlay"></div>
+  </div>
+
+  <div class="container">
+    <div class="hero-content">
+      <!-- Badge with Nepali theme -->
+      <div class="badge animate-fade-up">
+        <i data-lucide="mountain"></i>
+        <span>{% now "Y" %} Nepal Essay Competition</span>
+      </div>
+
+      <!-- Main Heading -->
+      <h1 class="hero-title animate-fade-up" style="animation-delay: 0.1s">
+        Celebrating <span class="text-nepal-red">Nepali</span> Creativity &
+        <span class="text-nepal-blue">Culture</span>
+      </h1>
+
+      <!-- Subheading -->
+      <p class="hero-subtitle animate-fade-up" style="animation-delay: 0.2s">
+        Join thousands of young writers from across Nepal's 7 provinces. Share
+        your vision for Nepal's future and compete for prizes worth over NPR
+        1,00,000.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="hero-buttons animate-fade-up" style="animation-delay: 0.3s">
+        <a href="#competitions" class="btn btn-hero">
+          <i data-lucide="pen-tool"></i>
+          View Competitions
+        </a>
+        <a href="#how-it-works" class="btn btn-hero-outline">
+          <i data-lucide="award"></i>
+          How It Works
+        </a>
+      </div>
+
+      <!-- Stats with Nepali theme -->
+      <div class="stats-grid animate-fade-up" style="animation-delay: 0.4s">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-nepal-red">
+            <i data-lucide="trophy"></i>
+          </div>
+          <div class="stat-value">NPR 1,00,000+</div>
+          <div class="stat-label">In Total Prizes</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-nepal-blue">
+            <i data-lucide="users"></i>
+          </div>
+          <div class="stat-value">500+</div>
+          <div class="stat-label">Active Writers</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-green">
+            <i data-lucide="mountain"></i>
+          </div>
+          <div class="stat-value">7 Provinces</div>
+          <div class="stat-label">Nationwide Reach</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works Section -->
+<section id="how-it-works" class="section">
+  <div class="container">
+    <!-- Section Header -->
+    <div class="section-header">
+      <span class="section-tag">Simple Process</span>
+      <h2 class="section-title">How It Works</h2>
+      <p class="section-subtitle">
+        From registration to winning, we have made the process simple and
+        straightforward.
+      </p>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <div class="step-icon step-icon-nepal-red">
+          <i data-lucide="user-plus"></i>
+        </div>
+        <h3 class="step-title">Register</h3>
+        <p class="step-description">
+          Create your free account. Open to all Nepali students and young
+          writers.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <div class="step-icon step-icon-nepal-blue">
+          <i data-lucide="pen-tool"></i>
+        </div>
+        <h3 class="step-title">Write</h3>
+        <p class="step-description">
+          Craft your essay in Nepali or English. Choose from various themes.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <div class="step-icon step-icon-green">
+          <i data-lucide="send"></i>
+        </div>
+        <h3 class="step-title">Submit</h3>
+        <p class="step-description">
+          Submit online before deadline. Edit anytime until submission closes.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <div class="step-icon step-icon-gold">
+          <i data-lucide="award"></i>
+        </div>
+        <h3 class="step-title">Win</h3>
+        <p class="step-description">
+          Our expert panel reviews entries. Winners get cash prizes and
+          recognition.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Competitions Section -->
+<section id="competitions" class="section section-muted">
+  <div class="container py-5">
+    <!-- Section Header -->
+    <div class="section-header">
+      <span class="section-tag">Competitions</span>
+      <h2 class="section-title">Essay Competitions</h2>
+      <p class="section-subtitle">
+        Participate in our exciting essay competitions and showcase your writing
+        skills
+      </p>
+    </div>
+
+    <div class="competitions-grid">
+      {% for competition in competitions|dictsort:"order" %}
+        {% if competition.is_active %}
+          <div class="competition-card {% if competition.is_featured %}competition-card-featured{% endif %}">
+            <div class="competition-header">
+              <h3 class="competition-title">{{ competition.title }}</h3>
+              {% if competition.is_open %}
+                {% if competition.days_left <= 7 %}
+                  <span class="badge badge-warning">{{ competition.days_left }} days left</span>
+                {% endif %}
+              {% else %}
+                <span class="badge badge-closed">CLOSED</span>
+              {% endif %}
+            </div>
+            <div class="competition-body">
+              <p class="competition-description">{{ competition.description|truncatewords:30 }}</p>
+              <div class="competition-details">
+                <div class="detail-item">
+                  <i data-lucide="calendar"></i>
+                  <span>Deadline: {{ competition.deadline|date:'F d, Y' }}</span>
+                  {% if not competition.is_open %}
+                    <span class="text-muted ms-2">(Passed)</span>
+                  {% endif %}
+                </div>
+                <div class="detail-item">
+                  <i data-lucide="users"></i>
+                  <span>{{ competition.eligibility }}</span>
+                </div>
+                <div class="detail-item">
+                  <i data-lucide="award"></i>
+                  <span>Prizes: {{ competition.prize }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="competition-footer">
+              <a href="{% url 'competition:detail' competition.pk %}" class="btn btn-outline-primary">
+                <i data-lucide="info"></i>
+                Details
+              </a>
+
+              {% if competition.is_open %}
+                {% if user.is_authenticated %}
+                  <a href="{% url 'competition:submit_essay' competition.pk %}" class="btn btn-primary">
+                    <i data-lucide="pen-tool"></i>
+                    {{ competition.button_text }}
+                  </a>
+                {% else %}
+                  <a href="{% url 'user:login' %}?next=/competitions/{{ competition.pk }}/submit/" class="btn btn-primary">
+                    <i data-lucide="pen-tool"></i>
+                    Login to Write
+                  </a>
+                {% endif %}
+              {% else %}
+                <button class="btn btn-secondary" disabled>
+                  <i data-lucide="lock"></i>
+                  Closed
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% empty %}
+        <div class="competition-card">
+          <div class="competition-body text-center py-5">
+            <i data-lucide="book-open" class="mb-3" style="width: 48px; height: 48px;"></i>
+            <h4>No Active Competitions</h4>
+            <p class="text-muted">Check back soon for new essay competitions!</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if competitions|length > 0 %}
+      <div class="text-center mt-5">
+        <p class="text-muted">Showing {{ competitions|length }} competition{{ competitions|pluralize }}</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Prizes Section -->
+<section id="prizes" class="section">
+  <div class="container">
+    <!-- Section Header -->
+    <div class="section-header">
+      <span class="section-tag">Rewards</span>
+      <h2 class="section-title">Amazing Prizes Await</h2>
+      <p class="section-subtitle">
+        Compete for prizes and gain recognition in the Nepali writing community.
+      </p>
+    </div>
+
+    <!-- Prize Cards -->
+    <div class="prizes-grid">
+      <div class="prize-card">
+        <span class="prize-badge prize-badge-silver">Runner Up</span>
+        <div class="prize-icon prize-icon-silver">
+          <i data-lucide="medal"></i>
+        </div>
+        <h3 class="prize-position">2nd Place</h3>
+        <div class="prize-amount">NPR 30,000</div>
+        <ul class="prize-perks">
+          <li><i data-lucide="star"></i> Certificate of Merit</li>
+          <li><i data-lucide="star"></i> Featured Publication</li>
+        </ul>
+      </div>
+
+      <div class="prize-card prize-card-featured">
+        <span class="prize-badge prize-badge-gold">Grand Prize</span>
+        <div class="prize-icon prize-icon-gold">
+          <i data-lucide="trophy"></i>
+        </div>
+        <h3 class="prize-position">1st Place</h3>
+        <div class="prize-amount">NPR 50,000</div>
+        <ul class="prize-perks">
+          <li><i data-lucide="star"></i> Certificate of Excellence</li>
+          <li><i data-lucide="star"></i> Featured Publication</li>
+          <li><i data-lucide="star"></i> Mentorship Session</li>
+        </ul>
+      </div>
+
+      <div class="prize-card">
+        <span class="prize-badge prize-badge-bronze">Bronze</span>
+        <div class="prize-icon prize-icon-bronze">
+          <i data-lucide="award"></i>
+        </div>
+        <h3 class="prize-position">3rd Place</h3>
+        <div class="prize-amount">NPR 20,000</div>
+        <ul class="prize-perks">
+          <li><i data-lucide="star"></i> Certificate of Achievement</li>
+          <li><i data-lucide="star"></i> Publication Opportunity</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="section section-muted">
+  <div class="container">
+    <!-- Section Header -->
+    <div class="section-header">
+      <span class="section-tag">About Us</span>
+      <h2 class="section-title">Nibandha Nakshatra</h2>
+      <p class="section-subtitle">
+        Inspiring young minds across Nepal to express creativity and share
+        visions for the future
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon-container">
+          <i data-lucide="award"></i>
+        </div>
+        <h3 class="feature-title">Awards & Spotlight</h3>
+        <p class="feature-description">
+          Win prestigious awards and get featured in national publications
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-container">
+          <i data-lucide="upload"></i>
+        </div>
+        <h3 class="feature-title">Smart Submission</h3>
+        <p class="feature-description">
+          Submit essays instantly through our digital platform
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-container">
+          <i data-lucide="map"></i>
+        </div>
+        <h3 class="feature-title">Nationwide Reach</h3>
+        <p class="feature-description">
+          Join thousands of young writers from across Nepal
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-container">
+          <i data-lucide="users"></i>
+        </div>
+        <h3 class="feature-title">Group Competitions</h3>
+        <p class="feature-description">
+          Participate individually or conduct group competitions
+        </p>
+      </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-content">
+            <div class="stat-icon">
+              <i data-lucide="users"></i>
+            </div>
+            <div class="stat-text">
+              <h3>500+</h3>
+              <p>Writers</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-content">
+            <div class="stat-icon">
+              <i data-lucide="school"></i>
+            </div>
+            <div class="stat-text">
+              <h3>50+</h3>
+              <p>Schools</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-content">
+            <div class="stat-icon">
+              <i data-lucide="map-pin"></i>
+            </div>
+            <div class="stat-text">
+              <h3>25+</h3>
+              <p>Districts</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-content">
+            <div class="stat-icon">
+              <i data-lucide="mountain"></i>
+            </div>
+            <div class="stat-text">
+              <h3>7</h3>
+              <p>Provinces</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials Section -->
+<section id="testimonials" class="section section-muted">
+  <div class="container">
+    <!-- Section Header -->
+    <div class="section-header">
+      <span class="section-tag">Testimonials</span>
+      <h2 class="section-title">What Participants Say</h2>
+      <p class="section-subtitle">
+        Feedback from our community members with our responses
+      </p>
+    </div>
+
+    {% if approved_feedback %}
+      <div class="testimonials-grid">
+        {% for feedback in approved_feedback %}
+          <div class="testimonial-card">
+            <!-- User Feedback -->
+            <div class="testimonial-content">
+              <div class="d-flex align-items-center mb-2">
+                <i data-lucide="message-square" class="text-primary me-2"></i>
+                <strong class="text-primary">User Feedback:</strong>
+              </div>
+              <i data-lucide="quote" class="testimonial-quote"></i>
+              <p class="testimonial-text">"{{ feedback.message|truncatewords:30 }}"</p>
+            </div>
+            
+            <!-- Admin Reply (if exists) -->
+            {% if feedback.admin_reply %}
+              <div class="admin-reply mt-4 p-3 rounded">
+                <div class="d-flex align-items-center mb-2">
+                  <i data-lucide="reply" class="text-success me-2"></i>
+                  <strong class="text-success">Our Response:</strong>
+                </div>
+                <p class="mb-0">{{ feedback.admin_reply }}</p>
+                {% if feedback.replied_at %}
+                  <small class="text-muted d-block mt-2">
+                    <i data-lucide="calendar" class="me-1"></i>
+                    Replied on {{ feedback.replied_at|date:"M d, Y" }}
+                  </small>
+                {% endif %}
+              </div>
+            {% endif %}
+            
+            <div class="testimonial-author mt-3">
+              <h4 class="author-name">{{ feedback.name }}</h4>
+              <div class="author-date">
+                <i data-lucide="calendar" class="me-1"></i>
+                {{ feedback.created_at|date:"M d, Y" }}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <i data-lucide="message-square" class="mb-3" style="width: 48px; height: 48px;"></i>
+        <h4>No testimonials yet</h4>
+        <p class="text-muted">Be the first to share your experience!</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact" class="section">
+  <div class="container">
+    <!-- Section Header -->
+    <div class="section-header">
+      <span class="section-tag">Contact</span>
+      <h2 class="section-title">Get In Touch</h2>
+      <p class="section-subtitle">
+        If you have questions or need help, feel free to reach out.
+      </p>
+    </div>
+
+    <div class="contact-container">
+      <div class="contact-info">
+        <div class="contact-item">
+          <div class="contact-icon">
+            <i data-lucide="mail"></i>
+          </div>
+          <div class="contact-text">
+            <h4>Email</h4>
+            <p>info@nepalessaycompetition.org</p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">
+            <i data-lucide="phone"></i>
+          </div>
+          <div class="contact-text">
+            <h4>Phone</h4>
+            <p>+977 1 1234567</p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon">
+            <i data-lucide="map-pin"></i>
+          </div>
+          <div class="contact-text">
+            <h4>Address</h4>
+            <p>Kathmandu, Nepal</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form">
+        {% if user.is_authenticated %}
+          <!-- Show messages at the top of the form -->
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} mb-4">
+                {% if message.tags == 'success' %}
+                  <i data-lucide="check-circle" class="me-2"></i>
+                {% elif message.tags == 'error' %}
+                  <i data-lucide="alert-circle" class="me-2"></i>
+                {% else %}
+                  <i data-lucide="info" class="me-2"></i>
+                {% endif %}
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <!-- Simple Feedback Form -->
+          <form method="POST" action="{% url 'core:home' %}" class="contact-form-box">
+            {% csrf_token %}
+            <input type="hidden" name="submit_feedback" value="1">
+            
+            <div class="form-group">
+              <label for="id_name" class="form-label">Your Name *</label>
+              <input type="text" name="name" id="id_name" class="form-input" 
+                     value="{% if user.first_name or user.last_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}" 
+                     required>
+            </div>
+            
+            <div class="form-group">
+              <label for="id_email" class="form-label">Email *</label>
+              <input type="email" name="email" id="id_email" class="form-input" 
+                     value="{{ user.email }}" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="id_message" class="form-label">Your Message *</label>
+              <textarea name="message" id="id_message" class="form-input" rows="5" 
+                        placeholder="Share your thoughts, questions, or feedback..." 
+                        required></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-nepal-blue">
+              <i data-lucide="send" class="me-2"></i>
+              Send Feedback
+            </button>
+            
+            <div class="mt-3 text-muted small">
+              <i data-lucide="info" class="me-1"></i>
+              Your feedback may be displayed on our testimonials section after admin approval. Admin may reply to your feedback.
+            </div>
+          </form>
+        {% else %}
+          <!-- Login Prompt -->
+          <div class="login-prompt text-center p-5">
+            <i data-lucide="lock" class="mb-4" style="width: 64px; height: 64px;"></i>
+            <h4>Login Required</h4>
+            <p class="text-muted mb-4">Please login to send us a message.</p>
+            <a href="{% url 'user:login' %}?next={% url 'core:home' %}#contact" class="btn btn-primary">
+              <i data-lucide="log-in"></i>
+              Login Now
+            </a>
+            <p class="mt-3 text-sm">
+              Don't have an account? 
+              <a href="{% url 'user:register' %}" class="text-nepal-red">Register here</a>
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Badge Styles */
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .badge-closed {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .badge-warning {
+    background-color: #fff3cd;
+    color: #856404;
+  }
+  
+  .badge-open {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .competition-header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  
+  .competition-title {
+    margin-right: 1rem;
+    flex: 1;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .competition-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .competition-title {
+      margin-bottom: 0.5rem;
+    }
+  }
+  
+  /* Testimonials Styles */
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .testimonial-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+  
+  .testimonial-quote {
+    color: #dc3545;
+    width: 32px;
+    height: 32px;
+    margin-bottom: 1rem;
+  }
+  
+  .testimonial-text {
+    color: #495057;
+    font-style: italic;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+  }
+  
+  .testimonial-author {
+    margin-top: auto;
+    border-top: 1px solid #e9ecef;
+    padding-top: 1rem;
+  }
+  
+  .author-name {
+    color: #212529;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+  
+  .author-date {
+    color: #6c757d;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Admin Reply Styles */
+  .admin-reply {
+    border-left: 4px solid #198754;
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.05) 0%, rgba(25, 135, 84, 0.1) 100%);
+    position: relative;
+    margin-top: 1rem;
+  }
+  
+  .admin-reply:before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 12px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid #198754;
+  }
+  
+  .admin-reply strong {
+    color: #198754;
+  }
+  
+  /* Alert Styles */
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+  }
+  
+  .alert-success {
+    background-color: rgba(25, 135, 84, 0.1);
+    border-color: rgba(25, 135, 84, 0.2);
+    color: #198754;
+  }
+  
+  .alert-error {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+  }
+  
+  .alert-info {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: rgba(13, 110, 253, 0.2);
+    color: #0d6efd;
+  }
+  
+  /* Login Prompt */
+  .login-prompt {
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+  }
+  
+  /* Form Styles */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #212529;
+  }
+  
+  .form-input {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+  
+  .form-input:focus {
+    color: #495057;
+    background-color: #fff;
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+  
+  textarea.form-input {
+    min-height: 120px;
+    resize: vertical;
+  }
+  
+  .contact-form-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .btn-nepal-blue {
+    background: linear-gradient(135deg, #003893 0%, #0066cc 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .btn-nepal-blue:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .testimonials-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .testimonial-card {
+      padding: 1.25rem;
+    }
+    
+    .contact-form-box {
+      padding: 1.5rem;
+    }
+    
+    .alert {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+    }
+  }
+</style>
+{% endblock %}

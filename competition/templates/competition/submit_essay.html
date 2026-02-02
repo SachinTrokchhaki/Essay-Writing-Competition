@@ -1,0 +1,2071 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<section class="section" id="write-essay">
+  <div class="container-wide">
+    <div class="section-header">
+      <span class="section-tag">{{ competition.title }}</span>
+      <h2 class="section-title">Write Your Essay</h2>
+      <p class="section-subtitle">
+        {{ competition.description|truncatewords:30 }}
+      </p>
+
+      <div class="competition-info-banner">
+        <div class="info-item">
+          <i data-lucide="calendar"></i>
+          <span>Deadline: {{ competition.deadline|date:"F d, Y" }}</span>
+        </div>
+        <div class="info-item">
+          <i data-lucide="award"></i>
+          <span>Prize: {{ competition.prize }}</span>
+        </div>
+        <div class="info-item">
+          <i data-lucide="users"></i>
+          <span>Eligibility: {{ competition.eligibility }}</span>
+        </div>
+        {% if competition.max_words %}
+        <div class="info-item">
+          <i data-lucide="file-text"></i>
+          <span>Word Limit: {{ competition.min_words }} - {{ competition.max_words }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="form-container-wide">
+      <form id="essayForm" class="essay-form" method="POST" action="#">
+        {% csrf_token %}
+        <input type="hidden" name="competition_id" value="{{ competition.id }}" />
+
+        <!-- Essay Information Section -->
+        <div class="form-section">
+          <div class="form-row-wide">
+            <div class="form-group title-group-wide">
+              <label for="essayTitle" class="form-label">
+                <i data-lucide="type" class="me-1"></i>
+                Essay Title
+              </label>
+              <input
+                type="text"
+                id="essayTitle"
+                name="title"
+                class="form-input-wide"
+                value="{{ competition.title }}"
+                required
+                maxlength="200"
+              />
+              <div class="form-hint">You can modify the suggested title</div>
+            </div>
+
+            <div class="form-group language-group">
+              <label for="language" class="form-label">
+                <i data-lucide="languages" class="me-1"></i>
+                Language
+              </label>
+              <select id="typinglanguage" name="language" class="form-input-wide" required>
+                <option value="en">English</option>
+                <option value="ne">Nepali (नेपाली)</option>
+              </select>
+              <div class="form-hint">Choose writing language</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Essay Content Section -->
+        <div class="form-section">
+          <div class="content-header-wide">
+            <h3 class="form-section-title">
+              <i data-lucide="pen-tool" class="me-2"></i>
+              Essay Content
+            </h3>
+            <div class="word-counter-wide">
+              <div class="counter-group">
+                <span class="counter-label">Words:</span>
+                <span id="wordCount" class="counter-value">0</span>
+              </div>
+              <span class="divider">|</span>
+              <div class="counter-group">
+                <span class="counter-label">Characters:</span>
+                <span id="charCount" class="counter-value">0</span>
+              </div>
+              <span class="divider">|</span>
+              <div class="counter-group">
+                <span class="counter-label">Status:</span>
+                <span id="statusIndicator" class="counter-value">Start Writing</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rich Text Editor Toolbar -->
+          <div class="rich-text-toolbar" id="editorToolbar">
+            <!-- Font Size -->
+            <div class="toolbar-group">
+              <span class="toolbar-label">Size:</span>
+              <select id="fontSize" class="toolbar-select">
+                <option value="12px">12</option>
+                <option value="14px">14</option>
+                <option value="16px" selected>16</option>
+                <option value="18px">18</option>
+                <option value="20px">20</option>
+                <option value="24px">24</option>
+              </select>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <!-- Font Family -->
+            <div class="toolbar-group">
+              <span class="toolbar-label">Font:</span>
+              <select id="fontFamily" class="toolbar-select">
+                <option value="'Times New Roman', Times, serif" selected>Times New Roman</option>
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Courier New', monospace">Courier New</option>
+              </select>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <!-- Text Formatting -->
+            <div class="toolbar-group">
+              <button type="button" class="toolbar-btn" data-command="bold" title="Bold (Ctrl+B)">
+                <i data-lucide="bold"></i>
+              </button>
+              <button type="button" class="toolbar-btn" data-command="italic" title="Italic (Ctrl+I)">
+                <i data-lucide="italic"></i>
+              </button>
+              <button type="button" class="toolbar-btn" data-command="underline" title="Underline (Ctrl+U)">
+                <i data-lucide="underline"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <!-- Alignment -->
+            <div class="toolbar-group">
+              <button type="button" class="toolbar-btn" data-command="justifyLeft" title="Align Left">
+                <i data-lucide="align-left"></i>
+              </button>
+              <button type="button" class="toolbar-btn" data-command="justifyCenter" title="Center">
+                <i data-lucide="align-center"></i>
+              </button>
+              <button type="button" class="toolbar-btn" data-command="justifyRight" title="Align Right">
+                <i data-lucide="align-right"></i>
+              </button>
+              <button type="button" class="toolbar-btn" data-command="justifyFull" title="Justify">
+                <i data-lucide="align-justify"></i>
+              </button>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <!-- Line Spacing -->
+            <div class="toolbar-group">
+              <span class="toolbar-label">Line:</span>
+              <select id="lineHeight" class="toolbar-select">
+                <option value="1">1.0</option>
+                <option value="1.15">1.15</option>
+                <option value="1.5" selected>1.5</option>
+                <option value="2">2.0</option>
+                <option value="2.5">2.5</option>
+              </select>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <!-- Paragraph Spacing -->
+            <div class="toolbar-group">
+              <span class="toolbar-label">Para:</span>
+              <select id="paragraphSpacing" class="toolbar-select">
+                <option value="0">0</option>
+                <option value="0.5">0.5</option>
+                <option value="1" selected>1.0</option>
+                <option value="1.5">1.5</option>
+                <option value="2">2.0</option>
+              </select>
+            </div>
+
+            <div class="toolbar-divider"></div>
+
+            <!-- Clear Formatting -->
+            <div class="toolbar-group">
+              <button type="button" class="toolbar-btn" data-command="removeFormat" title="Clear Formatting">
+                <i data-lucide="eraser"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Rich Text Editor Container -->
+          <div class="form-group">
+            <div id="richTextEditor" class="rich-text-editor"></div>
+            <textarea id="essayContent" name="essay_text" style="display: none"></textarea>
+
+            <div class="form-hint-wide">
+              <div class="hint-item">
+                <i data-lucide="info"></i>
+                <span>Minimum <strong>{{ competition.min_words|default:200 }}</strong> words required to enable submission</span>
+              </div>
+              <div class="hint-item">
+                <i data-lucide="info"></i>
+                <span>Maximum <strong>{{ competition.max_words|default:5000 }}</strong> words limit</span>
+              </div>
+              <div class="hint-item">
+                <i data-lucide="info"></i>
+                <span>Save Draft and Final Submission features are enabled only after reaching minimum word count</span>
+              </div>
+              <div class="hint-item">
+                <i data-lucide="info"></i>
+                <span>Previous paragraphs are locked and cannot be edited</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-footer-wide">
+          <div class="action-buttons-wide">
+            <div class="action-group">
+              <button
+                type="button"
+                id="saveDraftBtn"
+                class="btn btn-outline-primary"
+                {% if existing_draft and existing_draft.status != 'draft' %}disabled title="Essay already submitted"{% endif %}
+                {% if not user.is_authenticated %}disabled title="Please login to save draft"{% endif %}
+              >
+                <i data-lucide="save" class="me-2"></i>
+                {% if existing_draft and existing_draft.status != 'draft' %}
+                  Already Submitted
+                {% else %}
+                  Save Draft
+                {% endif %}
+              </button>
+            </div>
+
+            <div class="action-group">
+              <button type="button" id="clearBtn" class="btn btn-ghost">
+                <i data-lucide="trash-2" class="me-2"></i>
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          <div class="submit-section-wide">
+            {% if not user.is_authenticated %}
+            <div class="login-prompt-wide">
+              <div class="login-alert-wide">
+                <div class="alert-content">
+                  <i data-lucide="alert-circle" class="me-2"></i>
+                  <div>
+                    <strong>Login Required</strong>
+                    <p>
+                      You need to
+                      <a href="{% url 'user:login' %}?next={{ request.path }}" class="login-link">login</a>
+                      to submit your essay.
+                    </p>
+                  </div>
+                </div>
+                <a href="{% url 'user:login' %}?next={{ request.path }}" class="btn btn-gold">
+                  <i data-lucide="log-in" class="me-2"></i>
+                  Login Now
+                </a>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="submit-group">
+              <div class="submit-info">
+                <i data-lucide="shield-check" class="me-2"></i>
+                <span
+                  >By submitting, you agree to our
+                  <a href="{% url 'core:terms' %}">Terms & Conditions</a> and
+                  confirm this is your original work.</span
+                >
+              </div>
+              <button
+                type="button"
+                id="submitBtn"
+                class="btn btn-nepal-red btn-lg"
+                {% if not user.is_authenticated %}disabled title="Please login to submit"{% endif %}
+                {% if existing_draft and existing_draft.status != 'draft' %}disabled title="Essay already submitted"{% endif %}
+              >
+                <i data-lucide="send" class="me-2"></i>
+                {% if existing_draft and existing_draft.status != 'draft' %}
+                  Already Submitted
+                {% else %}
+                  Submit Essay
+                  <span class="btn-badge">Final Submission</span>
+                {% endif %}
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Competition Info Banner */
+  .competition-info-banner {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--muted);
+    padding: 1.2rem 1.8rem;
+    border-radius: 1rem;
+    margin-top: 1.5rem;
+    border: 1px solid var(--border);
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .info-item i {
+    color: var(--nepal-blue);
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Disabled button styles */
+  .btn:disabled,
+  .btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Extended Width Container */
+  .container-wide {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .container-wide {
+      padding: 0 1rem;
+    }
+
+    .competition-info-banner {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+
+  /* Extended Form Container */
+  .form-container-wide {
+    background: var(--card);
+    border-radius: 1.5rem;
+    padding: 3rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .form-container-wide {
+      padding: 2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .form-container-wide {
+      padding: 1.5rem;
+    }
+  }
+
+  /* Wide Form Row */
+  .form-row-wide {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (min-width: 768px) {
+    .form-row-wide {
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+  }
+
+  /* Wide Inputs */
+  .form-input-wide {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    background: var(--input);
+    border: 2px solid var(--border);
+    border-radius: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .form-input-wide:focus {
+    outline: none;
+    border-color: var(--nepal-blue);
+    box-shadow: 0 0 0 4px rgba(0, 56, 147, 0.1);
+    background: white;
+  }
+
+  /* Rich Text Editor Styles */
+  .rich-text-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--muted);
+    padding: 1rem 1.5rem;
+    border-radius: 1rem 1rem 0 0;
+    border: 2px solid var(--border);
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .toolbar-label {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .toolbar-select {
+    padding: 0.4rem 0.75rem;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    min-width: 80px;
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 1.5rem;
+    background: var(--border);
+  }
+
+  .rich-text-editor {
+    width: 100%;
+    min-height: 400px;
+    max-height: 600px;
+    padding: 1.5rem;
+    font-size: 16px;
+    line-height: 1.5;
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 0 0 1rem 1rem;
+    overflow-y: auto;
+    font-family: "Times New Roman", Times, serif;
+    outline: none;
+    user-select: text;
+  }
+
+  .rich-text-editor:focus {
+    outline: none;
+    border-color: var(--nepal-blue);
+    box-shadow: 0 0 0 4px rgba(0, 56, 147, 0.1);
+  }
+
+  /* Content Header */
+  .content-header-wide {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  @media (min-width: 1024px) {
+    .content-header-wide {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
+  /* Word Counter */
+  .word-counter-wide {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, var(--muted), var(--background));
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+  }
+
+  .counter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .counter-label {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    font-weight: 500;
+  }
+
+  .counter-value {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--nepal-blue);
+  }
+
+  .divider {
+    color: var(--border);
+  }
+
+  #statusIndicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Form Hints */
+  .form-hint-wide {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .hint-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+  }
+
+  .hint-item svg {
+    width: 1rem;
+    height: 1rem;
+    color: var(--nepal-blue);
+  }
+  
+  /* Form Footer */
+  .form-footer-wide {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border);
+  }
+
+  .action-buttons-wide {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .action-buttons-wide {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+  }
+
+  .action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  /* Login Prompt */
+  .login-prompt-wide {
+    margin-bottom: 2rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .login-alert-wide {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #fff8e1, #ffecb3);
+    border-radius: 1rem;
+    border: 2px solid var(--nepal-gold);
+  }
+
+  @media (min-width: 768px) {
+    .login-alert-wide {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .alert-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .alert-content i {
+    color: #d97706;
+    margin-top: 0.25rem;
+  }
+
+  .alert-content strong {
+    display: block;
+    color: #856404;
+    margin-bottom: 0.25rem;
+  }
+
+  .alert-content p {
+    color: #856404;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .login-link {
+    color: var(--nepal-blue);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  .login-link:hover {
+    color: var(--nepal-red);
+  }
+
+  /* Submit Section */
+  .submit-section-wide {
+    margin-top: 2rem;
+  }
+
+  .submit-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .submit-group {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
+  .submit-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    color: var(--muted-foreground);
+    font-size: 0.9375rem;
+    max-width: 600px;
+  }
+
+  .submit-info a {
+    color: var(--nepal-blue);
+    text-decoration: underline;
+  }
+
+  .submit-info a:hover {
+    color: var(--nepal-red);
+  }
+
+  .btn-badge {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.75rem;
+  }
+
+  /* CRITICAL STYLES FOR EDITOR FUNCTIONALITY */
+  /* Completely disable spell check */
+  #richTextEditor {
+    -webkit-user-modify: read-write !important;
+    -moz-user-modify: read-write !important;
+    user-modify: read-write !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+  }
+
+  /* Remove all red underlines */
+  #richTextEditor * {
+    -webkit-text-decoration-color: transparent !important;
+    text-decoration-color: transparent !important;
+  }
+
+  /* Locked paragraphs - COMPLETELY UNEDITABLE */
+  .locked-paragraph {
+    background-color: #f8f9fa !important;
+    border-left: 4px solid #28a745 !important;
+    color: #333 !important;
+    cursor: default !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    pointer-events: none !important;
+    caret-color: transparent !important;
+    opacity: 0.9 !important;
+  }
+
+  /* Current typing paragraph */
+  .typing-paragraph {
+    border-left: 4px solid #007bff !important;
+    background-color: #f0f8ff !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    pointer-events: auto !important;
+    caret-color: auto !important;
+    animation: pulse-border 2s infinite;
+  }
+
+  /* Paragraph base styling */
+  #richTextEditor p {
+    text-indent: 2em;
+    margin-bottom: 1.5em;
+    line-height: 1.8;
+    text-align: justify;
+    min-height: 1.5em;
+    padding: 8px 5px 8px 15px;
+    transition: all 0.3s ease;
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    position: relative;
+  }
+
+  #richTextEditor p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Status colors */
+  .status-minimum {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+  }
+
+  .status-good {
+    background: #dcfce7 !important;
+    color: #16a34a !important;
+  }
+
+  .status-maximum {
+    background: #fef3c7 !important;
+    color: #d97706 !important;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes pulse-border {
+    0%, 100% {
+      border-left-color: #007bff;
+      background-color: #f0f8ff;
+    }
+    50% {
+      border-left-color: #0056b3;
+      background-color: #e3f2fd;
+    }
+  }
+
+  /* Notification styles */
+  .custom-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .custom-notification.success {
+    background: #d1fae5;
+    border: 2px solid #10b981;
+    color: #065f46;
+  }
+
+  .custom-notification.error {
+    background: #fee2e2;
+    border: 2px solid #dc2626;
+    color: #7f1d1d;
+  }
+
+  .custom-notification.warning {
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    color: #92400e;
+  }
+
+  .custom-notification.info {
+    background: #dbeafe;
+    border: 2px solid #3b82f6;
+    color: #1e40af;
+  }
+</style>
+
+<script>
+// ============================================
+// COMPLETE ESSAY WRITER SYSTEM - FIXED VERSION
+// ============================================
+
+class EssayWriter {
+    constructor() {
+        this.initialize();
+    }
+
+    initialize() {
+        this.getElements();
+        this.setupVariables();
+        this.setupEditor();
+        this.setupEventListeners();
+        this.loadExistingDraft();
+        this.updateCounts();
+    }
+
+    getElements() {
+        this.editor = document.getElementById('richTextEditor');
+        this.titleInput = document.getElementById('essayTitle');
+        this.languageSelect = document.getElementById('typinglanguage');
+        this.saveDraftBtn = document.getElementById('saveDraftBtn');
+        this.submitBtn = document.getElementById('submitBtn');
+        this.clearBtn = document.getElementById('clearBtn');
+        this.wordCountEl = document.getElementById('wordCount');
+        this.charCountEl = document.getElementById('charCount');
+        this.statusIndicator = document.getElementById('statusIndicator');
+        this.essayForm = document.getElementById('essayForm');
+        this.competitionId = document.querySelector('input[name="competition_id"]')?.value;
+        
+        // Toolbar elements
+        this.fontSize = document.getElementById('fontSize');
+        this.fontFamily = document.getElementById('fontFamily');
+        this.lineHeight = document.getElementById('lineHeight');
+        this.paragraphSpacing = document.getElementById('paragraphSpacing');
+        this.toolbarButtons = document.querySelectorAll('.toolbar-btn[data-command]');
+    }
+
+    setupVariables() {
+        this.minWords = {{ competition.min_words|default:200 }};
+        this.maxWords = {{ competition.max_words|default:5000 }};
+        this.isAuthenticated = {% if user.is_authenticated %}true{% else %}false{% endif %};
+        this.lockedParagraphs = new Set();
+        this.currentParagraph = null;
+        
+        // Draft info
+        this.existingDraft = {
+            id: {% if existing_draft %}{{ existing_draft.id|default:0 }}{% else %}0{% endif %},
+            status: '{% if existing_draft %}{{ existing_draft.status|default:"draft" }}{% else %}draft{% endif %}'
+        };
+        
+        // For word counting
+        this.wordCount = 0;
+        this.charCount = 0;
+        
+        // Copy/paste prevention
+        this.pasteAttempts = 0;
+        this.lastPasteTime = 0;
+    }
+
+    setupEditor() {
+        // Disable all browser spell check and auto-correct
+        this.editor.setAttribute('spellcheck', 'false');
+        this.editor.setAttribute('autocorrect', 'off');
+        this.editor.setAttribute('autocapitalize', 'off');
+        this.editor.setAttribute('autocomplete', 'off');
+        this.editor.setAttribute('data-gramm', 'false');
+        this.editor.setAttribute('data-gramm_editor', 'false');
+        this.editor.setAttribute('data-enable-grammarly', 'false');
+        
+        // Set default content if empty
+        if (!this.editor.innerHTML.trim() || 
+            this.editor.innerHTML === '<br>' || 
+            this.editor.innerHTML === '<p><br></p>') {
+            this.editor.innerHTML = '<p style="text-indent: 2em;">&nbsp;</p>';
+        }
+        
+        // Process existing paragraphs
+        this.processParagraphs();
+        
+        // Focus on last paragraph
+        setTimeout(() => this.focusLastParagraph(), 100);
+    }
+
+    setupEventListeners() {
+        // Editor events
+        this.editor.addEventListener('input', (e) => this.handleEditorInput(e));
+        this.editor.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        this.editor.addEventListener('keyup', (e) => this.handleKeyUp(e));
+        this.editor.addEventListener('click', (e) => this.handleClick(e));
+        this.editor.addEventListener('paste', (e) => this.handlePaste(e));
+        this.editor.addEventListener('copy', (e) => this.handleCopy(e));
+        this.editor.addEventListener('cut', (e) => this.handleCut(e));
+        this.editor.addEventListener('focus', () => this.updateCurrentParagraph());
+        
+        // Toolbar events
+        this.setupToolbar();
+        
+        // Button events
+        if (this.saveDraftBtn) {
+            this.saveDraftBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.saveDraft();
+            });
+        }
+        
+        if (this.submitBtn) {
+            this.submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.submitEssay();
+            });
+        }
+        
+        if (this.clearBtn) {
+            this.clearBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.clearAll();
+            });
+        }
+        
+        // Title input limit
+        if (this.titleInput) {
+            this.titleInput.addEventListener('input', () => {
+                if (this.titleInput.value.length > 200) {
+                    this.titleInput.value = this.titleInput.value.substring(0, 200);
+                }
+            });
+        }
+    }
+
+    setupToolbar() {
+        // Formatting buttons
+        this.toolbarButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const command = button.getAttribute('data-command');
+                this.executeCommand(command);
+            });
+        });
+        
+        // Font size
+        if (this.fontSize) {
+            this.fontSize.addEventListener('change', () => {
+                this.executeCommand('fontSize', false, '7');
+                this.updateCurrentFormatting();
+            });
+        }
+        
+        // Font family
+        if (this.fontFamily) {
+            this.fontFamily.addEventListener('change', () => {
+                this.executeCommand('fontName', false, this.fontFamily.value);
+            });
+        }
+        
+        // Line height
+        if (this.lineHeight) {
+            this.lineHeight.addEventListener('change', () => {
+                const paragraphs = this.editor.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    if (!this.isParagraphLocked(p)) {
+                        p.style.lineHeight = this.lineHeight.value;
+                    }
+                });
+            });
+        }
+        
+        // Paragraph spacing
+        if (this.paragraphSpacing) {
+            this.paragraphSpacing.addEventListener('change', () => {
+                const paragraphs = this.editor.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    if (!this.isParagraphLocked(p)) {
+                        p.style.marginBottom = this.paragraphSpacing.value + 'em';
+                    }
+                });
+            });
+        }
+    }
+
+    // ============================================
+    // EDITOR FUNCTIONS - FIXED VERSION
+    // ============================================
+
+    handleEditorInput(e) {
+        // Prevent input in locked paragraphs
+        const selection = window.getSelection();
+        const node = selection.anchorNode;
+        let currentPara = node;
+        
+        while (currentPara && currentPara.nodeName !== 'P') {
+            currentPara = currentPara.parentNode;
+        }
+        
+        if (currentPara && this.isParagraphLocked(currentPara)) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showNotification('Cannot edit locked paragraphs', 'warning');
+            
+            // Restore focus to typing paragraph
+            this.focusLastParagraph();
+            return;
+        }
+        
+        this.processParagraphs();
+        this.updateCounts();
+        this.updateCurrentParagraph();
+        this.updateButtonStates();
+    }
+
+    handleKeyDown(e) {
+        // Block all editing in locked paragraphs
+        const selection = window.getSelection();
+        const node = selection.anchorNode;
+        let currentPara = node;
+        
+        while (currentPara && currentPara.nodeName !== 'P') {
+            currentPara = currentPara.parentNode;
+        }
+        
+        if (currentPara && this.isParagraphLocked(currentPara)) {
+            // Allow only navigation keys
+            const allowedKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'];
+            if (!allowedKeys.includes(e.key)) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // If trying to delete/backspace, move to typing paragraph
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    this.showNotification('Cannot edit locked paragraphs', 'warning');
+                    this.focusLastParagraph();
+                }
+                return;
+            }
+        }
+        
+        // BACKSPACE HANDLING - FIXED
+        if (e.key === 'Backspace') {
+            // Check if cursor is at the beginning of current paragraph
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const currentPara = this.currentParagraph;
+            
+            if (currentPara && range.startOffset === 0 && 
+                (range.startContainer === currentPara || 
+                 range.startContainer.parentNode === currentPara)) {
+                
+                // At beginning of paragraph - don't allow backspace
+                e.preventDefault();
+                
+                // If paragraph is empty, ensure cursor is visible
+                if (this.isParagraphEmpty(currentPara)) {
+                    // Ensure cursor stays in this paragraph
+                    this.focusParagraph(currentPara);
+                }
+                return;
+            }
+            
+            // Normal backspace within paragraph - let it happen
+            return;
+        }
+        
+        // Enter key - create new paragraph
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            if (e.shiftKey) {
+                // Shift+Enter = line break within same paragraph
+                document.execCommand('insertLineBreak');
+            } else {
+                // Enter = new paragraph
+                this.createNewParagraph();
+            }
+        }
+        
+        // Keyboard shortcuts
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key.toLowerCase()) {
+                case 'b':
+                    e.preventDefault();
+                    this.executeCommand('bold');
+                    break;
+                case 'i':
+                    e.preventDefault();
+                    this.executeCommand('italic');
+                    break;
+                case 'u':
+                    e.preventDefault();
+                    this.executeCommand('underline');
+                    break;
+                case 'v':
+                    // Block paste via Ctrl+V
+                    e.preventDefault();
+                    this.showPasteWarning();
+                    break;
+                case 'c':
+                case 'x':
+                    // Allow copy/cut but show warning
+                    if (this.isInLockedParagraph()) {
+                        e.preventDefault();
+                        this.showNotification('Cannot copy from locked paragraphs', 'warning');
+                    }
+                    break;
+            }
+        }
+    }
+
+    handleKeyUp(e) {
+        // Update current paragraph after typing
+        this.updateCurrentParagraph();
+    }
+
+    handleClick(e) {
+        // Prevent clicking into locked paragraphs
+        let clickedPara = e.target;
+        while (clickedPara && clickedPara.nodeName !== 'P') {
+            clickedPara = clickedPara.parentNode;
+        }
+        
+        if (clickedPara && this.isParagraphLocked(clickedPara)) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Move cursor to typing paragraph
+            this.focusLastParagraph();
+            this.showNotification('Cannot click on locked paragraphs', 'warning');
+            return;
+        }
+        
+        this.updateCurrentParagraph();
+    }
+
+    handlePaste(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const now = Date.now();
+        const timeSinceLastPaste = now - this.lastPasteTime;
+        
+        // Rate limiting - max 3 paste attempts per minute
+        if (timeSinceLastPaste < 60000 && this.pasteAttempts >= 3) {
+            this.showPasteWarning('rate_limit');
+            return;
+        }
+        
+        // Reset counter if more than a minute has passed
+        if (timeSinceLastPaste > 60000) {
+            this.pasteAttempts = 0;
+        }
+        
+        this.pasteAttempts++;
+        this.lastPasteTime = now;
+        
+        // Show appropriate warning
+        if (this.pasteAttempts === 1) {
+            this.showPasteWarning('first_warning');
+        } else if (this.pasteAttempts === 2) {
+            this.showPasteWarning('second_warning');
+        } else if (this.pasteAttempts >= 3) {
+            this.showPasteWarning('blocked');
+        }
+    }
+
+    handleCopy(e) {
+        // Allow copying but show educational message
+        const selection = window.getSelection();
+        const text = selection.toString();
+        
+        if (text.length > 100) {
+            e.preventDefault();
+            this.showNotification('Copying large portions of text is discouraged to maintain academic integrity', 'warning');
+            // Allow copy after showing message
+            setTimeout(() => {
+                document.execCommand('copy');
+            }, 100);
+        }
+    }
+
+    handleCut(e) {
+        // Prevent cutting from locked paragraphs
+        if (this.isInLockedParagraph()) {
+            e.preventDefault();
+            this.showNotification('Cannot cut from locked paragraphs', 'warning');
+        }
+    }
+
+    isParagraphEmpty(paragraph) {
+        if (!paragraph) return true;
+        const text = paragraph.textContent.trim();
+        const html = paragraph.innerHTML.trim();
+        return !text || text === '' || text === '&nbsp;' || html === '<br>' || html === '';
+    }
+
+    isInLockedParagraph() {
+        const selection = window.getSelection();
+        const node = selection.anchorNode;
+        let currentPara = node;
+        
+        while (currentPara && currentPara.nodeName !== 'P') {
+            currentPara = currentPara.parentNode;
+        }
+        
+        return currentPara && this.isParagraphLocked(currentPara);
+    }
+
+    processParagraphs() {
+        const paragraphs = this.editor.querySelectorAll('p');
+        
+        paragraphs.forEach((para, index) => {
+            // Ensure text indent
+            if (!para.style.textIndent) {
+                para.style.textIndent = '2em';
+            }
+            
+            // Lock all except last paragraph
+            if (index < paragraphs.length - 1) {
+                this.lockParagraph(para);
+            } else {
+                this.unlockParagraph(para);
+                this.currentParagraph = para;
+            }
+            
+            // Ensure proper styling
+            if (!this.isParagraphLocked(para)) {
+                para.style.marginBottom = (this.paragraphSpacing?.value || '1') + 'em';
+                para.style.lineHeight = (this.lineHeight?.value || '1.5');
+            }
+        });
+        
+        // If no paragraphs, create one
+        if (paragraphs.length === 0) {
+            const newPara = document.createElement('p');
+            newPara.style.textIndent = '2em';
+            newPara.innerHTML = '&nbsp;';
+            this.editor.appendChild(newPara);
+            this.currentParagraph = newPara;
+        }
+    }
+
+    createNewParagraph() {
+        const currentPara = this.currentParagraph;
+        
+        if (!currentPara) return;
+        
+        // Don't create new paragraph if current is empty
+        if (this.isParagraphEmpty(currentPara)) {
+            return;
+        }
+        
+        // Lock current paragraph
+        this.lockParagraph(currentPara);
+        
+        // Create new paragraph
+        const newPara = document.createElement('p');
+        newPara.style.textIndent = '2em';
+        newPara.style.marginBottom = (this.paragraphSpacing?.value || '1') + 'em';
+        newPara.style.lineHeight = (this.lineHeight?.value || '1.5');
+        newPara.innerHTML = '&nbsp;';
+        
+        // Insert after current paragraph
+        currentPara.parentNode.insertBefore(newPara, currentPara.nextSibling);
+        
+        // Update current paragraph
+        this.currentParagraph = newPara;
+        
+        // Focus on new paragraph
+        this.focusParagraph(newPara);
+        
+        // Update counts
+        this.updateCounts();
+    }
+
+    lockParagraph(paragraph) {
+        if (!paragraph) return;
+        
+        paragraph.classList.add('locked-paragraph');
+        paragraph.classList.remove('typing-paragraph');
+        this.lockedParagraphs.add(paragraph);
+        
+        // Add locked indicator
+        if (!paragraph.querySelector('.lock-indicator')) {
+            const indicator = document.createElement('span');
+            indicator.className = 'lock-indicator';
+            indicator.innerHTML = '🔒';
+            indicator.style.position = 'absolute';
+            indicator.style.left = '-25px';
+            indicator.style.top = '50%';
+            indicator.style.transform = 'translateY(-50%)';
+            indicator.style.fontSize = '12px';
+            indicator.style.opacity = '0.5';
+            paragraph.style.position = 'relative';
+            paragraph.appendChild(indicator);
+        }
+    }
+
+    unlockParagraph(paragraph) {
+        if (!paragraph) return;
+        
+        paragraph.classList.remove('locked-paragraph');
+        paragraph.classList.add('typing-paragraph');
+        this.lockedParagraphs.delete(paragraph);
+        
+        // Remove lock indicator
+        const indicator = paragraph.querySelector('.lock-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    isParagraphLocked(paragraph) {
+        return this.lockedParagraphs.has(paragraph);
+    }
+
+    focusParagraph(paragraph) {
+        if (!paragraph) return;
+        
+        const range = document.createRange();
+        const selection = window.getSelection();
+        
+        // If paragraph is empty, ensure it has content for cursor
+        if (this.isParagraphEmpty(paragraph)) {
+            paragraph.innerHTML = '&nbsp;';
+        }
+        
+        range.selectNodeContents(paragraph);
+        range.collapse(false); // Move to end
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        this.editor.focus();
+    }
+
+    focusLastParagraph() {
+        const paragraphs = this.editor.querySelectorAll('p');
+        if (paragraphs.length > 0) {
+            this.focusParagraph(paragraphs[paragraphs.length - 1]);
+        }
+    }
+
+    updateCurrentParagraph() {
+        const selection = window.getSelection();
+        const node = selection.anchorNode;
+        
+        if (node) {
+            let currentPara = node;
+            while (currentPara && currentPara.nodeName !== 'P') {
+                currentPara = currentPara.parentNode;
+            }
+            
+            if (currentPara && currentPara.nodeName === 'P') {
+                // If clicking on locked paragraph, move to typing paragraph
+                if (this.isParagraphLocked(currentPara)) {
+                    this.focusLastParagraph();
+                    return;
+                }
+                
+                // Unlock current typing paragraph
+                this.unlockParagraph(currentPara);
+                this.currentParagraph = currentPara;
+                
+                // Lock all other paragraphs
+                const paragraphs = this.editor.querySelectorAll('p');
+                paragraphs.forEach(para => {
+                    if (para !== currentPara) {
+                        this.lockParagraph(para);
+                    }
+                });
+            }
+        }
+    }
+
+    executeCommand(command, showUI = false, value = null) {
+        document.execCommand(command, showUI, value);
+        this.editor.focus();
+    }
+
+    updateCurrentFormatting() {
+        if (this.fontSize) {
+            const fontSize = this.currentParagraph?.style.fontSize || '16px';
+            this.fontSize.value = fontSize;
+        }
+    }
+
+    // ============================================
+    // PASTE WARNING SYSTEM
+    // ============================================
+
+    showPasteWarning(type = 'first_warning') {
+        const messages = {
+            first_warning: {
+                title: '⚠️ Paste Detected',
+                message: 'Pasting text is disabled to ensure original work. Please type your essay.',
+                type: 'warning'
+            },
+            second_warning: {
+                title: '⚠️ Paste Attempt #2',
+                message: 'Pasting is not allowed. Continued attempts may result in restrictions.',
+                type: 'warning'
+            },
+            blocked: {
+                title: '❌ Paste Blocked',
+                message: 'Multiple paste attempts detected. Paste functionality is now disabled.',
+                type: 'error'
+            },
+            rate_limit: {
+                title: '⏰ Too Many Attempts',
+                message: 'Please wait before trying to paste again.',
+                type: 'error'
+            }
+        };
+        
+        const msg = messages[type] || messages.first_warning;
+        
+        // Remove existing warning
+        const existingWarning = document.querySelector('.paste-warning-notification');
+        if (existingWarning) {
+            existingWarning.remove();
+        }
+        
+        // Create warning notification
+        const warning = document.createElement('div');
+        warning.className = `paste-warning-notification ${msg.type}`;
+        
+        warning.innerHTML = `
+            <div class="paste-warning-content">
+                <div class="paste-warning-header">
+                    <i data-lucide="${msg.type === 'error' ? 'alert-octagon' : 'alert-triangle'}" class="paste-warning-icon"></i>
+                    <span>${msg.title}</span>
+                    ${this.pasteAttempts > 0 ? `<span class="paste-warning-attempt">Attempt ${this.pasteAttempts}</span>` : ''}
+                </div>
+                <div class="paste-warning-message">
+                    ${msg.message}
+                    ${type === 'blocked' ? '<small>You can continue typing normally</small>' : ''}
+                </div>
+                ${type === 'blocked' ? '<div class="paste-warning-progress"><div class="paste-warning-progress-bar"></div></div>' : ''}
+            </div>
+            <button type="button" class="close-paste-warning">
+                <i data-lucide="x"></i>
+            </button>
+        `;
+        
+        document.body.appendChild(warning);
+        
+        // Add shake animation for blocked state
+        if (type === 'blocked') {
+            warning.classList.add('paste-warning-shake');
+        }
+        
+        // Initialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Close button
+        warning.querySelector('.close-paste-warning').addEventListener('click', () => {
+            warning.style.opacity = '0';
+            warning.style.transform = 'translateX(100%) scale(0.8)';
+            warning.style.transition = 'opacity 0.3s, transform 0.3s';
+            setTimeout(() => warning.remove(), 300);
+        });
+        
+        // Auto-remove after timeout
+        setTimeout(() => {
+            if (warning.parentNode) {
+                warning.style.opacity = '0';
+                warning.style.transform = 'translateX(100%) scale(0.8)';
+                warning.style.transition = 'opacity 0.3s, transform 0.3s';
+                setTimeout(() => warning.remove(), 300);
+            }
+        }, type === 'blocked' ? 10000 : 5000);
+    }
+
+    // ============================================
+    // COUNTING FUNCTIONS
+    // ============================================
+
+    updateCounts() {
+        const content = this.getPlainText();
+        this.wordCount = this.countWords(content);
+        this.charCount = content.length;
+        
+        // Update displays
+        this.wordCountEl.textContent = this.wordCount;
+        this.charCountEl.textContent = this.charCount;
+        
+        // Update status
+        this.updateStatus();
+    }
+
+    getPlainText() {
+        const temp = document.createElement('div');
+        temp.innerHTML = this.editor.innerHTML;
+        return temp.textContent || temp.innerText || '';
+    }
+
+    countWords(text) {
+        if (!text || !text.trim()) return 0;
+        return text.trim().split(/\s+/).length;
+    }
+
+    updateStatus() {
+        let statusText = 'Start Writing';
+        let statusClass = '';
+
+        if (this.wordCount === 0) {
+            statusText = 'Start Writing';
+            statusClass = '';
+        } else if (this.wordCount < this.minWords) {
+            const needed = this.minWords - this.wordCount;
+            statusText = `${needed} more word${needed === 1 ? '' : 's'} needed`;
+            statusClass = 'status-minimum';
+        } else if (this.wordCount > this.maxWords) {
+            const exceeded = this.wordCount - this.maxWords;
+            statusText = `Limit exceeded by ${exceeded} word${exceeded === 1 ? '' : 's'}`;
+            statusClass = 'status-maximum';
+        } else {
+            statusText = 'Ready to submit!';
+            statusClass = 'status-good';
+        }
+
+        this.statusIndicator.textContent = statusText;
+        this.statusIndicator.className = 'counter-value ' + statusClass;
+    }
+
+    updateButtonStates() {
+        const canSave = this.wordCount >= this.minWords && 
+                       this.existingDraft.status === 'draft' && 
+                       this.isAuthenticated;
+        
+        const canSubmit = canSave && 
+                         this.wordCount <= this.maxWords && 
+                         this.existingDraft.status === 'draft' && 
+                         this.isAuthenticated;
+
+        // Save draft button
+        if (this.saveDraftBtn) {
+            this.saveDraftBtn.disabled = !canSave;
+            if (!canSave) {
+                if (!this.isAuthenticated) {
+                    this.saveDraftBtn.title = 'Please login to save draft';
+                } else if (this.wordCount < this.minWords) {
+                    this.saveDraftBtn.title = `Write at least ${this.minWords} words`;
+                } else if (this.existingDraft.status !== 'draft') {
+                    this.saveDraftBtn.title = 'Essay already submitted';
+                }
+            } else {
+                this.saveDraftBtn.title = 'Save draft';
+            }
+        }
+
+        // Submit button
+        if (this.submitBtn) {
+            this.submitBtn.disabled = !canSubmit;
+            if (!canSubmit) {
+                if (!this.isAuthenticated) {
+                    this.submitBtn.title = 'Please login to submit';
+                } else if (this.wordCount < this.minWords) {
+                    this.submitBtn.title = `Need at least ${this.minWords} words`;
+                } else if (this.wordCount > this.maxWords) {
+                    this.submitBtn.title = `Maximum ${this.maxWords} words allowed`;
+                } else if (this.existingDraft.status !== 'draft') {
+                    this.submitBtn.title = 'Essay already submitted';
+                }
+            } else {
+                this.submitBtn.title = 'Submit final essay';
+            }
+        }
+    }
+
+    // ============================================
+    // DRAFT FUNCTIONS
+    // ============================================
+
+    loadExistingDraft() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const draftId = urlParams.get('draft') || this.existingDraft.id;
+        
+        if (draftId && draftId !== '0') {
+            this.loadDraft(draftId);
+        }
+    }
+
+    async loadDraft(draftId) {
+        if (!draftId || draftId === '0') return;
+
+        try {
+            this.showLoading(true);
+            
+            const response = await fetch(`/competition/get-draft-content/${draftId}/`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': this.getCSRFToken()
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data) {
+                // Set title and language
+                if (this.titleInput && data.data.title) {
+                    this.titleInput.value = data.data.title;
+                }
+                
+                if (this.languageSelect && data.data.language) {
+                    this.languageSelect.value = data.data.language;
+                }
+                
+                // Set content
+                if (data.data.content) {
+                    this.editor.innerHTML = data.data.content;
+                    this.processParagraphs();
+                }
+                
+                // Update counts
+                this.updateCounts();
+                this.updateButtonStates();
+                
+                // Update URL
+                if (!window.location.search.includes('draft=')) {
+                    const newUrl = `${window.location.pathname}?draft=${draftId}`;
+                    window.history.replaceState({}, '', newUrl);
+                }
+                
+                this.showNotification('Draft loaded successfully!', 'success');
+            } else {
+                this.showNotification(data.error || 'Failed to load draft', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading draft:', error);
+            this.showNotification('Error loading draft', 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    async saveDraft(isAutoSave = false) {
+        if (this.existingDraft.status !== 'draft') {
+            this.showNotification('Essay already submitted', 'error');
+            return;
+        }
+
+        if (!this.isAuthenticated) {
+            this.showNotification('Please login to save draft', 'warning');
+            return;
+        }
+
+        if (this.wordCount < this.minWords) {
+            this.showNotification(`Minimum ${this.minWords} words required`, 'warning');
+            return;
+        }
+
+        const draftData = {
+            competition_id: this.competitionId,
+            title: this.titleInput?.value.trim() || 'Untitled Draft',
+            content: this.getPlainText(),
+            html_content: this.editor.innerHTML,
+            language: this.languageSelect?.value || 'en'
+        };
+
+        // Add draft ID if exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const draftId = urlParams.get('draft');
+        
+        if (this.existingDraft.id && this.existingDraft.id !== '0') {
+            draftData.draft_id = this.existingDraft.id;
+        } else if (draftId) {
+            draftData.draft_id = draftId;
+        }
+
+        try {
+            this.showLoading(true, 'save');
+            
+            const response = await fetch('/competition/save-draft/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify(draftData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                if (!isAutoSave) {
+                    this.showNotification(data.message || 'Draft saved!', 'success');
+                }
+                
+                // Update draft ID
+                if (data.essay_id) {
+                    this.existingDraft.id = data.essay_id;
+                    
+                    // Update URL
+                    if (!draftId || draftId != data.essay_id) {
+                        const newUrl = `${window.location.pathname}?draft=${data.essay_id}`;
+                        window.history.replaceState({}, '', newUrl);
+                    }
+                }
+            } else {
+                this.showNotification(data.error || 'Failed to save', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving draft:', error);
+            this.showNotification('Network error', 'error');
+        } finally {
+            this.showLoading(false, 'save');
+        }
+    }
+
+    // ============================================
+    // SUBMISSION FUNCTIONS
+    // ============================================
+
+    async submitEssay() {
+        if (!this.isAuthenticated) {
+            this.showNotification('Please login to submit', 'warning');
+            return;
+        }
+
+        if (this.existingDraft.status !== 'draft') {
+            this.showNotification('Essay already submitted', 'error');
+            return;
+        }
+
+        if (this.wordCount < this.minWords) {
+            this.showNotification(`Minimum ${this.minWords} words required`, 'warning');
+            return;
+        }
+
+        if (this.wordCount > this.maxWords) {
+            this.showNotification(`Maximum ${this.maxWords} words allowed`, 'warning');
+            return;
+        }
+
+        const essayData = {
+            competition_id: this.competitionId,
+            title: this.titleInput?.value.trim() || 'Untitled Essay',
+            content: this.getPlainText(),
+            html_content: this.editor.innerHTML,
+            language: this.languageSelect?.value || 'en'
+        };
+
+        // Add draft ID
+        if (this.existingDraft.id && this.existingDraft.id !== '0') {
+            essayData.draft_id = this.existingDraft.id;
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            const draftId = urlParams.get('draft');
+            if (draftId) essayData.draft_id = draftId;
+        }
+
+        try {
+            this.showLoading(true, 'submit');
+            
+            const response = await fetch('/competition/submit-final/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.getCSRFToken()
+                },
+                body: JSON.stringify(essayData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showNotification('Essay submitted successfully!', 'success');
+                
+                // Update status
+                this.existingDraft.status = 'submitted';
+                this.updateButtonStates();
+                
+                // Disable buttons
+                if (this.saveDraftBtn) {
+                    this.saveDraftBtn.disabled = true;
+                    this.saveDraftBtn.innerHTML = '<i data-lucide="check-circle" class="me-2"></i>Submitted';
+                }
+                
+                // Redirect after delay
+                setTimeout(() => {
+                    window.location.href = "{% url 'user:my_essays' %}";
+                }, 2000);
+            } else {
+                this.showNotification(data.error || 'Submission failed', 'error');
+            }
+        } catch (error) {
+            console.error('Error submitting:', error);
+            this.showNotification('Network error', 'error');
+        } finally {
+            this.showLoading(false, 'submit');
+        }
+    }
+
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+
+    clearAll() {
+        if (confirm('Are you sure you want to clear everything? This cannot be undone.')) {
+            // Clear title
+            if (this.titleInput) this.titleInput.value = '';
+            
+            // Clear editor
+            this.editor.innerHTML = '<p style="text-indent: 2em;">&nbsp;</p>';
+            
+            // Reset state
+            this.lockedParagraphs.clear();
+            this.currentParagraph = this.editor.querySelector('p');
+            this.unlockParagraph(this.currentParagraph);
+            
+            // Update counts
+            this.updateCounts();
+            this.updateButtonStates();
+            
+            // Focus editor
+            this.focusLastParagraph();
+            
+            this.showNotification('Editor cleared', 'info');
+        }
+    }
+
+    showLoading(show, type = 'general') {
+        if (type === 'save' && this.saveDraftBtn) {
+            if (show) {
+                this.saveDraftBtn.disabled = true;
+                this.saveDraftBtn.innerHTML = '<i data-lucide="loader" class="me-2"></i>Saving...';
+            } else {
+                this.saveDraftBtn.disabled = false;
+                this.saveDraftBtn.innerHTML = '<i data-lucide="save" class="me-2"></i>Save Draft';
+            }
+        } else if (type === 'submit' && this.submitBtn) {
+            if (show) {
+                this.submitBtn.disabled = true;
+                this.submitBtn.innerHTML = '<i data-lucide="loader" class="me-2"></i>Submitting...';
+            } else {
+                this.updateButtonStates();
+                this.submitBtn.innerHTML = '<i data-lucide="send" class="me-2"></i>Submit Essay<span class="btn-badge">Final Submission</span>';
+            }
+        }
+    }
+
+    getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    showNotification(message, type = 'info') {
+        // Remove existing
+        document.querySelectorAll('.custom-notification').forEach(n => n.remove());
+        
+        const notification = document.createElement('div');
+        notification.className = `custom-notification ${type}`;
+        
+        const colors = {
+            success: { bg: '#d1fae5', border: '#10b981', text: '#065f46', icon: 'check-circle' },
+            error: { bg: '#fee2e2', border: '#dc2626', text: '#7f1d1d', icon: 'alert-circle' },
+            warning: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', icon: 'alert-triangle' },
+            info: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af', icon: 'info' }
+        };
+        
+        const color = colors[type] || colors.info;
+        
+        notification.innerHTML = `
+            <i data-lucide="${color.icon}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            notification.style.transition = 'opacity 0.3s, transform 0.3s';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.essayApp = new EssayWriter();
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // Add paste warning styles
+    const pasteWarningStyles = document.createElement('style');
+    pasteWarningStyles.textContent = `
+        .paste-warning-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            z-index: 10000;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            border: 2px solid;
+            transform-origin: top right;
+        }
+        
+        .paste-warning-notification.error {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border-color: #dc2626;
+            color: #7f1d1d;
+        }
+        
+        .paste-warning-notification.warning {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+        
+        .paste-warning-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        
+        .paste-warning-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .paste-warning-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        
+        .paste-warning-message {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-left: 2rem;
+        }
+        
+        .paste-warning-attempt {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        
+        .close-paste-warning {
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 1rem;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            color: inherit;
+        }
+        
+        .close-paste-warning:hover {
+            background: rgba(0, 0, 0, 0.2);
+            transform: scale(1.1);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .paste-warning-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .paste-warning-progress {
+            height: 4px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 2px;
+            margin-top: 0.75rem;
+            overflow: hidden;
+        }
+        
+        .paste-warning-progress-bar {
+            height: 100%;
+            background: currentColor;
+            border-radius: 2px;
+            width: 100%;
+            animation: progressShrink 10s linear forwards;
+        }
+        
+        @keyframes progressShrink {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+    `;
+    document.head.appendChild(pasteWarningStyles);
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,392 @@
+<!-- competition/templates/competition/detail.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+{% load competition_tags %}
+
+{% block content %}
+  <section class="section">
+    <div class="container">
+      <!-- Back to competitions link -->
+      <div class="mb-4">
+        <a href="{% url 'core:home' %}#competitions" class="btn btn-outline-primary">
+          <i data-lucide="arrow-left"></i>
+          Back to Competitions
+        </a>
+      </div>
+
+      <!-- Competition Header -->
+      <div class="competition-detail-header">
+        <span class="section-tag">Competition Details</span>
+        <h1 class="competition-detail-title">{{ competition.title }}</h1>
+
+        <div class="competition-meta">
+          <div class="meta-item">
+            <i data-lucide="calendar"></i>
+            <div>
+              <span class="meta-label">Deadline:</span>
+              <span class="meta-value">{{ competition.deadline|date:'F d, Y' }}</span>
+            </div>
+          </div>
+          <div class="meta-item">
+            <i data-lucide="users"></i>
+            <div>
+              <span class="meta-label">Eligibility:</span>
+              <span class="meta-value">{{ competition.eligibility }}</span>
+            </div>
+          </div>
+          <div class="meta-item">
+            <i data-lucide="award"></i>
+            <div>
+              <span class="meta-label">Prize:</span>
+              <span class="meta-value">{{ competition.prize }}</span>
+            </div>
+          </div>
+          <div class="meta-item">
+            <i data-lucide="file-text"></i>
+            <div>
+              <span class="meta-label">Word Count:</span>
+              <span class="meta-value">{{ competition.min_words }} - {{ competition.max_words }} words</span>
+            </div>
+          </div>
+          
+          <!-- Days Left Badge -->
+          <div class="meta-item">
+            <i data-lucide="clock"></i>
+            <div>
+              <span class="meta-label">Status:</span>
+              <span class="meta-value">
+                {% if competition.days_left > 0 %}
+                  <span class="badge bg-success">{{ competition.days_left }} days left</span>
+                {% elif competition.days_left == 0 %}
+                  <span class="badge bg-warning">Ends today!</span>
+                {% else %}
+                  <span class="badge bg-danger">Closed</span>
+                {% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Competition Description -->
+      <div class="detail-section">
+        <h2 class="section-title-sm">
+          <i data-lucide="book-open" class="me-2"></i>
+          About This Competition
+        </h2>
+        <div class="detail-content">{{ competition.description|linebreaks }}</div>
+      </div>
+
+      <!-- Competition Rules -->
+      {% if competition.rules %}
+        <div class="detail-section">
+          <h2 class="section-title-sm">
+            <i data-lucide="scroll-text" class="me-2"></i>
+            Rules & Guidelines
+          </h2>
+          <div class="detail-content">{{ competition.rules|linebreaks }}</div>
+        </div>
+      {% endif %}
+
+      <!-- Evaluation Criteria -->
+      {% if competition.evaluation_criteria %}
+        <div class="detail-section">
+          <h2 class="section-title-sm">
+            <i data-lucide="clipboard-check" class="me-2"></i>
+            Evaluation Criteria
+          </h2>
+          <div class="detail-content">{{ competition.evaluation_criteria|linebreaks }}</div>
+        </div>
+      {% endif %}
+
+      <!-- Submission Guidelines -->
+      {% if competition.submission_guidelines %}
+        <div class="detail-section">
+          <h2 class="section-title-sm">
+            <i data-lucide="upload" class="me-2"></i>
+            Submission Guidelines
+          </h2>
+          <div class="detail-content">{{ competition.submission_guidelines|linebreaks }}</div>
+        </div>
+      {% endif %}
+
+      <!-- Action Buttons -->
+      <div class="detail-actions">
+        {% if can_submit %}
+          <a href="{% url 'competition:submit_essay' competition.pk %}" class="btn btn-primary btn-lg">
+            <i data-lucide="pen-tool"></i>
+            {{ competition.button_text|default:"Start Writing" }}
+          </a>
+        {% else %}
+          <button class="btn btn-secondary btn-lg" disabled title="{{ submit_message }}">
+            <i data-lucide="lock"></i>
+            {% if "login" in submit_message %}
+              Login to Submit
+            {% else %}
+              {{ submit_message|truncatechars:30 }}
+            {% endif %}
+          </button>
+          
+          <!-- Alternative action for logged in users who can't submit -->
+          {% if user.is_authenticated and not can_submit and "already submitted" in submit_message %}
+            <a href="{% url 'user:my_essays' %}" class="btn btn-outline-info">
+              <i data-lucide="file-text"></i>
+              View My Submission
+            </a>
+          {% endif %}
+        {% endif %}
+
+        {% if competition.contact_email %}
+          <a href="mailto:{{ competition.contact_email }}" class="btn btn-outline-primary">
+            <i data-lucide="mail"></i>
+            Contact Organizer
+          </a>
+        {% endif %}
+        
+        <!-- Save as Draft button (if user has a draft) -->
+        {% if user.is_authenticated %}
+          {% with draft=user|get_user_draft:competition.id %}
+            {% if draft %}
+              <a href="{% url 'competition:submit_essay' competition.pk %}?draft={{ draft.id }}" class="btn btn-outline-success">
+                <i data-lucide="save"></i>
+                Continue Draft
+              </a>
+            {% endif %}
+          {% endwith %}
+        {% endif %}
+      </div>
+      
+      <!-- User Status Message -->
+      {% if not can_submit and submit_message %}
+        <div class="alert alert-info mt-3">
+          <i data-lucide="info" class="me-2"></i>
+          {{ submit_message }}
+          {% if "login" in submit_message %}
+            <a href="{% url 'user:login' %}?next={{ request.path }}" class="alert-link ms-2">Login here</a>
+          {% endif %}
+        </div>
+      {% endif %}
+      
+      <!-- Quick Stats -->
+      {% if user.is_authenticated %}
+        <div class="mt-4 pt-3 border-top">
+          <h3 class="h5 mb-3">
+            <i data-lucide="bar-chart" class="me-2"></i>
+            Your Status
+          </h3>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <i data-lucide="file-text"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Your Submission</div>
+                  <div class="stat-value">
+                    {% with submission=user|get_user_submission:competition.id %}
+                      {% if submission %}
+                        <span class="badge bg-{{ submission.status|status_color }}">
+                          {{ submission.get_status_display }}
+                        </span>
+                      {% else %}
+                        <span class="text-muted">Not submitted yet</span>
+                      {% endif %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <i data-lucide="clock"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Time Remaining</div>
+                  <div class="stat-value">
+                    {% if competition.days_left > 0 %}
+                      {{ competition.days_left }} days
+                    {% elif competition.days_left == 0 %}
+                      <span class="text-warning">Today!</span>
+                    {% else %}
+                      <span class="text-danger">Closed</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <i data-lucide="users"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Your Eligibility</div>
+                  <div class="stat-value">
+                    {% if user.country %}
+                      <span class="text-success">Eligible</span>
+                    {% else %}
+                      <span class="text-warning">Update profile</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <style>
+    .competition-detail-header {
+      background: linear-gradient(135deg, var(--card), var(--background));
+      border-radius: 1.5rem;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      border: 1px solid var(--border);
+    }
+    
+    .competition-detail-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 1rem 0;
+      color: var(--foreground);
+    }
+    
+    .competition-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--background);
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+    }
+    
+    .meta-item i {
+      color: var(--nepal-blue);
+    }
+    
+    .meta-label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      margin-bottom: 0.25rem;
+    }
+    
+    .meta-value {
+      font-weight: 600;
+      color: var(--foreground);
+    }
+    
+    .detail-section {
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .detail-section:last-child {
+      border-bottom: none;
+    }
+    
+    .section-title-sm {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--foreground);
+      display: flex;
+      align-items: center;
+    }
+    
+    .detail-content {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--foreground);
+    }
+    
+    .detail-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    
+    .btn-lg {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+    }
+    
+    .badge {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 0.5rem;
+    }
+    
+    .bg-success { background-color: #10b981; color: white; }
+    .bg-warning { background-color: #f59e0b; color: white; }
+    .bg-danger { background-color: #ef4444; color: white; }
+    .bg-info { background-color: #3b82f6; color: white; }
+    .bg-secondary { background-color: #6b7280; color: white; }
+    
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 100%;
+    }
+    
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--nepal-blue-light);
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--nepal-blue);
+    }
+    
+    .stat-content {
+      flex: 1;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      margin-bottom: 0.25rem;
+    }
+    
+    .stat-value {
+      font-weight: 600;
+      color: var(--foreground);
+      font-size: 1.1rem;
+    }
+    
+    .alert {
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+    }
+    
+    .alert-info {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
+      color: var(--foreground);
+    }
+  </style>
+{% endblock %}

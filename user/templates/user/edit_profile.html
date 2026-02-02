@@ -1,0 +1,46 @@
+<!-- user/templates/user/edit_profile.html -->
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container py-4 mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Edit Profile</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" value="{{ user.first_name }}" class="form-control">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" value="{{ user.last_name }}" class="form-control">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" value="{{ user.email }}" class="form-control">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Country</label>
+                            <input type="text" name="country" value="{{ user.country }}" class="form-control">
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="{% url 'user:my_profile' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

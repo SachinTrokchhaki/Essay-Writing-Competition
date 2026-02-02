@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5">
+                    <h1 class="display-5 fw-bold text-primary mb-4">Dynamic Page</h1>
+                    <div class="alert alert-info">
+                        <i data-lucide="info" class="me-2"></i>
+                        <strong>You typed:</strong>
+                    </div>
+                    <div class="p-4 bg-light rounded mb-4">
+                        <code class="h3 text-dark">{{ value }}</code>
+                    </div>
+                    <p class="text-muted mb-4">
+                        This is a dynamically generated page based on the URL path.
+                    </p>
+                    <a href="{% url 'core:home' %}" class="btn btn-primary">
+                        <i data-lucide="home" class="me-2"></i>
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

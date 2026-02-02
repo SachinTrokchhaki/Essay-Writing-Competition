@@ -1,0 +1,435 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service | Essay Writing Website</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #003893 0%, #dc143c 100%);
+            color: white;
+            padding: 3rem 0 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .last-updated {
+            background-color: #fff3cd;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 2rem;
+            text-align: center;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .content-box {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        h2 {
+            color: #003893;
+            margin: 2.5rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        h2:first-of-type {
+            margin-top: 0;
+        }
+        
+        h3 {
+            color: #dc143c;
+            margin: 1.5rem 0 0.8rem 0;
+            font-size: 1.3rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+        }
+        
+        ul, ol {
+            margin-left: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .highlight-box {
+            background-color: #f8f9ff;
+            border-left: 4px solid #003893;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .warning-box {
+            background-color: #ffeaea;
+            border: 1px solid #ffcccc;
+            border-left: 4px solid #dc143c;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+        
+        .definition {
+            background-color: #f0f8ff;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            border-left: 3px solid #003893;
+        }
+        
+        .acceptance-section {
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 3rem 0;
+            text-align: center;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+        
+        .checkbox-container input {
+            margin-right: 10px;
+            transform: scale(1.3);
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            background: linear-gradient(to right, #003893, #dc143c);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 56, 147, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .footer-links {
+            margin-top: 1rem;
+        }
+        
+        .footer-links a {
+            color: #003893;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 15px;
+            }
+            
+            header {
+                padding: 2rem 0 1.5rem 0;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+            
+            .content-box {
+                padding: 1.5rem;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                display: block;
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+        
+        /* Table of Contents */
+        .toc {
+            background-color: #f8f9ff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #003893;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+            color: #003893;
+        }
+        
+        .toc ul {
+            columns: 2;
+            list-style-type: none;
+            margin-left: 0;
+        }
+        
+        .toc li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .toc a {
+            color: #003893;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .toc ul {
+                columns: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Terms of Service</h1>
+            <p>By using our essay writing services, you agree to these terms and conditions</p>
+        </header>
+        
+        <div class="last-updated">
+            <p><strong>Last Updated:</strong> December 1, 2025</p>
+        </div>
+        
+        <div class="content-box">
+            <div class="toc">
+                <h3>Table of Contents</h3>
+                <ul>
+                    <li><a href="#section1">1. Acceptance of Terms</a></li>
+                    <li><a href="#section2">2. Description of Service</a></li>
+                    <li><a href="#section3">3. User Responsibilities</a></li>
+                    <li><a href="#section4">4. Ordering Process</a></li>
+                    <li><a href="#section5">5. Payment Terms</a></li>
+                    <li><a href="#section6">6. Revision Policy</a></li>
+                    <li><a href="#section7">7. Intellectual Property</a></li>
+                    <li><a href="#section8">8. Prohibited Uses</a></li>
+                    <li><a href="#section9">9. Limitation of Liability</a></li>
+                    <li><a href="#section10">10. Termination</a></li>
+                    <li><a href="#section11">11. Changes to Terms</a></li>
+                    <li><a href="#section12">12. Governing Law</a></li>
+                </ul>
+            </div>
+            
+            <div class="definition">
+                <p><strong>Website:</strong> EssayNepal.com</p>
+                <p><strong>Services:</strong> Academic writing assistance including essays, research papers, dissertations, and editing services</p>
+            </div>
+            
+            <h2 id="section1">1. Acceptance of Terms</h2>
+            <p>By accessing and using EssayNepal.com (the "Website"), you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our services.</p>
+            
+            <h2 id="section2">2. Description of Service</h2>
+            <p>EssayNepal.com provides academic writing assistance, including but not limited to essays, research papers, dissertations, and editing services ("Services"). Our services are intended to serve as reference materials for research and educational purposes only.</p>
+            
+            <div class="highlight-box">
+                <p><strong>Important:</strong> Our services are designed to provide reference materials only. Users should not submit our work as their own academic work, as this violates academic integrity policies.</p>
+            </div>
+            
+            <h2 id="section3">3. User Responsibilities</h2>
+            <ul>
+                <li>You must be at least 16 years old to use our Services</li>
+                <li>You agree to provide accurate and complete information when placing orders</li>
+                <li>You acknowledge that all materials provided by our service are for reference purposes only</li>
+                <li>You agree not to submit our work as your own academic work, as this violates academic integrity policies</li>
+                <li>You retain all intellectual property rights to the original materials you provide to us</li>
+            </ul>
+            
+            <h2 id="section4">4. Ordering Process</h2>
+            <ul>
+                <li>Orders are placed through our online system</li>
+                <li>You are responsible for providing clear instructions and requirements</li>
+                <li>All deadlines are calculated based on Eastern Standard Time (EST)</li>
+                <li>Rush orders may incur additional fees</li>
+            </ul>
+            
+            <h2 id="section5">5. Payment Terms</h2>
+            <ul>
+                <li>All payments must be made in full before work begins</li>
+                <li>We accept payment methods listed on our Website</li>
+                <li>Prices are subject to change without notice</li>
+                <li>Refund policies are outlined in our separate Refund Policy document</li>
+            </ul>
+            
+            <h2 id="section6">6. Revision Policy</h2>
+            <ul>
+                <li>We offer free revisions within 14 days of order completion, provided the original instructions are unchanged</li>
+                <li>Major changes to original requirements may incur additional charges</li>
+            </ul>
+            
+            <h2 id="section7">7. Intellectual Property</h2>
+            <ul>
+                <li>Upon full payment, you receive a non-exclusive license to use the completed work for reference purposes</li>
+                <li>We retain the right to use completed works (anonymized) for internal training and quality assurance</li>
+                <li>All website content, design, and software are the property of EssayNepal.com</li>
+            </ul>
+            
+            <h2 id="section8">8. Prohibited Uses</h2>
+            <p>You may not use our Services to:</p>
+            <ul>
+                <li>Violate academic integrity policies of any educational institution</li>
+                <li>Engage in illegal activities</li>
+                <li>Submit our work as your own in academic contexts</li>
+                <li>Harass, threaten, or abuse our staff</li>
+                <li>Attempt to reverse-engineer our systems or processes</li>
+            </ul>
+            
+            <div class="warning-box">
+                <p><strong>Academic Integrity Warning:</strong> Misuse of our services in violation of academic integrity policies may result in academic penalties. We are not responsible for such consequences.</p>
+            </div>
+            
+            <h2 id="section9">9. Limitation of Liability</h2>
+            <p>EssayNepal.com shall not be liable for:</p>
+            <ul>
+                <li>Any academic penalties incurred by users who misuse our services</li>
+                <li>Indirect, incidental, or consequential damages</li>
+                <li>Delays caused by technical issues beyond our reasonable control</li>
+                <li>Any errors or omissions in content provided</li>
+            </ul>
+            
+            <h2 id="section10">10. Termination</h2>
+            <p>We reserve the right to terminate or suspend access to our Services without prior notice for conduct that we believe violates these Terms or is harmful to other users, us, or third parties.</p>
+            
+            <h2 id="section11">11. Changes to Terms</h2>
+            <p>We reserve the right to modify these Terms at any time. Continued use of the Website after changes constitutes acceptance of the modified Terms.</p>
+            
+            <h2 id="section12">12. Governing Law</h2>
+            <p>These Terms shall be governed by and construed in accordance with the laws of Nepal, without regard to its conflict of law provisions.</p>
+            
+            <div class="acceptance-section">
+                <h3>Acceptance of Terms</h3>
+                <p>By using our website and services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.</p>
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="acceptTerms">
+                    <label for="acceptTerms">I have read and agree to the Terms of Service</label>
+                </div>
+                
+                <div>
+                    <button class="btn" onclick="acceptTerms()">Accept & Continue</button>
+                    <a href="privacy-policy.html" class="btn btn-secondary">View Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>&copy; 2025 EssayNepal.com. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="index.html">Home</a> | 
+                <a href="privacy-policy.html">Privacy Policy</a> | 
+                <a href="refund-policy.html">Refund Policy</a> | 
+                <a href="contact.html">Contact Us</a>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        function acceptTerms() {
+            const checkbox = document.getElementById('acceptTerms');
+            if (checkbox.checked) {
+                alert('Thank you for accepting our Terms of Service!');
+                // In a real application, you would save this acceptance to your database
+                // and redirect the user to the main page or registration
+                // window.location.href = 'register.html';
+            } else {
+                alert('Please check the box to accept the Terms of Service.');
+            }
+        }
+        
+        // Smooth scroll for table of contents links
+        document.querySelectorAll('.toc a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+{% endblock %}
