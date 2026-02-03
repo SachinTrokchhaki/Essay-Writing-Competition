@@ -154,6 +154,12 @@
             {% endif %}
           {% endwith %}
         {% endif %}
+        
+        <!-- Leaderboard Button (Always show if competition is active) -->
+        <a href="/competition/leaderboard/{{ competition.pk }}/"  class="btn btn-outline-warning">
+          <i data-lucide="trophy"></i>
+          View Leaderboard
+        </a>
       </div>
       
       <!-- User Status Message -->
@@ -175,7 +181,7 @@
             Your Status
           </h3>
           <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="stat-card">
                 <div class="stat-icon">
                   <i data-lucide="file-text"></i>
@@ -196,7 +202,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="stat-card">
                 <div class="stat-icon">
                   <i data-lucide="clock"></i>
@@ -215,7 +221,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <div class="stat-card">
                 <div class="stat-icon">
                   <i data-lucide="users"></i>
@@ -232,8 +238,76 @@
                 </div>
               </div>
             </div>
+            <div class="col-md-3">
+              <div class="stat-card">
+                <div class="stat-icon">
+                  <i data-lucide="trophy"></i>
+                </div>
+                <div class="stat-content">
+                  <div class="stat-label">Leaderboard</div>
+                  <div class="stat-value">
+                    <a href="/competition/leaderboard/{{ competition.pk }}/" class="text-decoration-none">
+                      View Rankings
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      {% endif %}
+      
+      <!-- Leaderboard Preview Section -->
+      {% if competition|has_accepted_essays %}
+      <div class="mt-4 pt-3 border-top">
+        <h3 class="h5 mb-3">
+          <i data-lucide="trophy" class="me-2"></i>
+          Top 5 Rankings
+        </h3>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Participant</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% with top_essays=competition|get_top_essays:5 %}
+                {% for essay in top_essays %}
+                <tr {% if essay.user == user %}class="table-info"{% endif %}>
+                  <td>
+                    <span class="badge {% if forloop.counter == 1 %}bg-warning{% elif forloop.counter == 2 %}bg-secondary{% elif forloop.counter == 3 %}bg-danger{% else %}bg-light text-dark{% endif %}">
+                      #{{ forloop.counter }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if essay.user == user %}
+                    <strong>You</strong>
+                    {% else %}
+                    {{ essay.user.get_full_name|default:essay.user.username }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    <strong>{{ essay.total_score }}</strong>
+                    {% if essay.user == user %}
+                    <span class="badge bg-info ms-2">Your Essay</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% endwith %}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-center mt-3">
+          <a href="/competition/leaderboard/{{ competition.pk }}/"  class="btn btn-outline-warning">
+            <i data-lucide="trophy" class="me-2"></i>
+            View Full Leaderboard
+          </a>
+        </div>
+      </div>
       {% endif %}
     </div>
   </section>
@@ -388,5 +462,18 @@
       border-color: rgba(59, 130, 246, 0.3);
       color: var(--foreground);
     }
+    
+    .table-info {
+      background-color: rgba(13, 110, 253, 0.1);
+    }
   </style>
+  
+  <script>
+    // Initialize Lucide icons
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    });
+  </script>
 {% endblock %}

@@ -1,0 +1,168 @@
+{% extends 'core/base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* FIX: Ensure content appears BELOW navbar */
+    .container.py-4 {
+        padding-top: 120px !important;
+        position: relative;
+        z-index: 1;
+        margin-top: 0;
+    }
+    
+    /* Ensure content is visible on mobile */
+    @media (max-width: 768px) {
+        .container.py-4 {
+            padding-top: 140px !important;
+        }
+        
+        .col-md-6.col-lg-4 {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* Card styling */
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+        height: 100%;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,.1);
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-title {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+    
+    .card-text {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+    
+    /* Badge styling */
+    .badge {
+        padding: 0.5em 0.75em;
+        font-weight: 500;
+    }
+    
+    .badge.bg-info {
+        background: linear-gradient(45deg, #17a2b8, #138496) !important;
+    }
+    
+    .badge.bg-secondary {
+        background: linear-gradient(45deg, #6c757d, #495057) !important;
+    }
+    
+    /* Button styling */
+    .btn-primary {
+        background: linear-gradient(45deg, #3498db, #2980b9);
+        border: none;
+        padding: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .btn-outline-secondary {
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(45deg, #2980b9, #1f618d);
+    }
+    
+    /* Alert styling */
+    .alert-info {
+        background-color: #e3f2fd;
+        border-color: #bbdefb;
+        color: #1565c0;
+        border-radius: 8px;
+        padding: 2rem;
+    }
+    
+    /* Competition meta styling */
+    .competition-meta {
+        margin: 1rem 0;
+        padding: 0.75rem;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- FIX: Add margin-top spacer div -->
+<div class="mt-5 pt-4 d-none d-md-block"></div>
+<div class="mt-4 pt-3 d-md-none"></div>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4 fw-bold">{{ page_title }}</h1>
+            
+            {% if competitions %}
+            <div class="row">
+                {% for competition in competitions %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ competition.title }}</h5>
+                            <p class="card-text text-muted small mb-2 flex-grow-1">
+                                {{ competition.description|truncatewords:20 }}
+                            </p>
+                            <div class="competition-meta mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span class="badge bg-info">
+                                        <i class="fas fa-users me-1"></i>
+                                        {{ competition.accepted_count }} participant{{ competition.accepted_count|pluralize:"s" }}
+                                    </span>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ competition.deadline|date:"M d" }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-auto">
+                                <div class="d-grid gap-2">
+                                    <a href="{% url 'competition:leaderboard_detail' competition.pk %}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-trophy me-2"></i>
+                                        View Leaderboard
+                                    </a>
+                                    <a href="{% url 'competition:detail' competition.pk %}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center py-5">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <h5>No Active Competitions</h5>
+                <p class="mb-0">There are currently no active competitions. Check back soon!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

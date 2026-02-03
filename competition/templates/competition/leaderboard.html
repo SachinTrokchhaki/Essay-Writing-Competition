@@ -1,0 +1,213 @@
+{% extends 'core/base.html' %}
+{% load competition_tags %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Fix for fixed header overlapping content */
+    .container.py-4 {
+        padding-top: 120px !important;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Ensure content is visible on mobile */
+    @media (max-width: 768px) {
+        .container.py-4 {
+            padding-top: 140px !important;
+        }
+    }
+    
+    /* Improve table readability */
+    .table thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        position: sticky;
+        top: 120px;
+        z-index: 10;
+    }
+    
+    .table tbody tr.table-info {
+        background-color: #e7f4ff !important;
+        font-weight: 500;
+    }
+    
+    /* Badge styling */
+    .badge.bg-warning {
+        background: linear-gradient(45deg, #ffc107, #ff9800) !important;
+    }
+    
+    .badge.bg-secondary {
+        background: linear-gradient(45deg, #6c757d, #495057) !important;
+    }
+    
+    .badge.bg-danger {
+        background: linear-gradient(45deg, #dc3545, #c82333) !important;
+    }
+    
+    /* Card improvements */
+    .card {
+        border: 1px solid rgba(0,0,0,.125);
+        box-shadow: 0 2px 4px rgba(0,0,0,.05);
+        margin-bottom: 1.5rem;
+    }
+    
+    .card-header {
+        font-weight: 600;
+    }
+    
+    /* Competition info card */
+    .competition-info-card .card-body {
+        background-color: #f8f9fa;
+    }
+    
+    /* Score formatting */
+    td.text-center {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Add spacer to prevent navbar overlap -->
+<div class="mt-5 pt-4 d-none d-md-block"></div>
+<div class="mt-4 pt-3 d-md-none"></div>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">{{ page_title }}</h1>
+                <div>
+                    <!-- TEMPORARY FIX: Use direct URL instead of Django URL tag -->
+                    <a href="/competition/" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-list me-1"></i>
+                        All Competitions
+                    </a>
+                    <a href="{% url 'competition:detail' competition.pk %}" class="btn btn-primary">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Competition Details
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Competition Info Card -->
+            <div class="card mb-4 competition-info-card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">{{ competition.title }}</h5>
+                    <p class="card-text text-muted">{{ competition.description|truncatewords:30 }}</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <i class="fas fa-calendar me-2 text-primary"></i>
+                                <strong>Deadline:</strong> {{ competition.deadline|date:"F d, Y" }}
+                            </p>
+                            <p class="mb-2">
+                                <i class="fas fa-users me-2 text-primary"></i>
+                                <strong>Eligibility:</strong> {{ competition.eligibility }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-2">
+                                <i class="fas fa-award me-2 text-warning"></i>
+                                <strong>Prize:</strong> {{ competition.prize }}
+                            </p>
+                            <p class="mb-2">
+                                <i class="fas fa-file-text me-2 text-primary"></i>
+                                <strong>Participants:</strong> {{ essays|length }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if essays %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 70px;">Rank</th>
+                            <th>Participant</th>
+                            <th>Essay Title</th>
+                            <th>Topic</th>
+                            <th>Cohesion</th>
+                            <th>Grammar</th>
+                            <th>Structure</th>
+                            <th><strong>Total</strong></th>
+                            <th>Evaluated On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for essay in essays %}
+                        <tr {% if essay.user == request.user %}class="table-info"{% endif %}>
+                            <td class="text-center">
+                                <span class="badge {% if essay.rank == 1 %}bg-warning{% elif essay.rank == 2 %}bg-secondary{% elif essay.rank == 3 %}bg-danger{% else %}bg-light text-dark border{% endif %} fs-6 py-2 px-3">
+                                    {{ essay.rank }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if essay.user == request.user %}
+                                <strong class="text-primary">You</strong>
+                                {% else %}
+                                {{ essay.user.get_full_name|default:essay.user.username }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ essay.title }}</strong>
+                                {% if essay.user == request.user %}
+                                <span class="badge bg-info ms-2">Your Essay</span>
+                                {% endif %}
+                            </td>
+                            <!-- Add decimal formatting for scores -->
+                            <td class="text-center">{{ essay.topic_score|floatformat:1 }}</td>
+                            <td class="text-center">{{ essay.cohesion_score|floatformat:1 }}</td>
+                            <td class="text-center">{{ essay.grammar_score|floatformat:1 }}</td>
+                            <td class="text-center">{{ essay.structure_score|floatformat:1 }}</td>
+                            <td class="text-center"><strong class="text-primary">{{ essay.total_score|floatformat:1 }}</strong></td>
+                            <td class="text-muted">{{ essay.evaluated_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- User's position if not in top list -->
+            {% if user.is_authenticated %}
+                {% for essay in essays %}
+                    {% if essay.user == user %}
+                        <div class="card mt-4 border-info">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-user me-2"></i>
+                                Your Position in This Competition
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-1">{{ essay.title }}</h5>
+                                        <p class="text-muted mb-0">
+                                            Rank: <strong>#{{ essay.rank }}</strong> out of {{ essays|length }} participants
+                                        </p>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="display-6 text-primary fw-bold">{{ essay.total_score|floatformat:1 }}</div>
+                                        <small class="text-muted">Total Score</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+            
+            {% else %}
+            <div class="alert alert-info text-center py-5">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <h5>No Evaluated Essays Yet</h5>
+                <p class="mb-0">No essays have been evaluated for this competition yet. Check back later!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

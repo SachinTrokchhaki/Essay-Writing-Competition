@@ -1,14 +1,16 @@
-# competition/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.contrib import messages
 import json
 from datetime import date
+from django.db import models 
 
 from .models import EssayCompetition, Essay
+from .evaluator import EssayEvaluator
 from .utils import (
     check_essay_submission, 
     get_user_draft,
@@ -19,17 +21,22 @@ from .utils import (
 def competition_detail(request, pk):
     competition = get_object_or_404(EssayCompetition, pk=pk, is_active=True)
     
-    # Check if user can submit
     if request.user.is_authenticated:
         can_submit, message = can_user_submit(request.user, competition)
     else:
         can_submit, message = False, "Please login to submit"
     
+    # Get leaderboard for this competition
+    leaderboard = Essay.objects.filter(
+        competition=competition,
+        status='accepted'
+    ).order_by('-total_score')[:10]
+    
     context = {
         'competition': competition,
-        'today': timezone.now().date(),
         'can_submit': can_submit,
         'submit_message': message,
+        'leaderboard': leaderboard,
     }
     return render(request, 'competition/detail.html', context)
 
@@ -38,13 +45,11 @@ def competition_detail(request, pk):
 def submit_essay(request, pk):
     competition = get_object_or_404(EssayCompetition, pk=pk, is_active=True)
     
-    # Check if user can submit
     can_submit, message = can_user_submit(request.user, competition)
     if not can_submit:
         messages.warning(request, message)
         return redirect('competition:detail', pk=pk)
     
-    # Get draft (using utility function)
     draft_id = request.GET.get('draft')
     existing_draft = get_user_draft(request.user, competition, draft_id)
     
@@ -289,7 +294,7 @@ def get_draft(request, pk):
             'is_draft': True
         }
     })
-    
+
 
 @login_required
 @require_GET
@@ -329,4 +334,169 @@ def get_draft_content(request, pk):
         }
     })
 
+
+@staff_member_required
+def evaluate_essay(request, pk):
+    """Admin view to manually trigger evaluation"""
+    essay = get_object_or_404(Essay, pk=pk)
+    
+    if request.method == 'POST' and essay.status == 'submitted':
+        # Initialize evaluator
+        evaluator = EssayEvaluator(
+            competition_topic=essay.competition.topic,
+            min_words=essay.competition.min_words,
+            max_words=essay.competition.max_words
+        )
+        
+        # Run evaluation
+        scores = evaluator.evaluate(essay.title, essay.content)
+        
+        # Update essay
+        essay.topic_score = scores['topic_score']
+        essay.cohesion_score = scores['cohesion_score']
+        essay.grammar_score = scores['grammar_score']
+        essay.structure_score = scores['structure_score']
+        essay.total_score = scores['total_score']
+        essay.status = 'accepted'
+        essay.reviewed_by = request.user
+        essay.evaluated_at = timezone.now()
+        essay.save()
+        
+        messages.success(request, f"Essay evaluated! Total score: {scores['total_score']}")
+        return redirect('admin:competition_essay_changelist')
+    
+    context = {
+        'essay': essay,
+        'page_title': f'Evaluate: {essay.title}'
+    }
+    return render(request, 'competition/admin/evaluate_essay.html', context)
+
+def leaderboard(request, pk=None):
+    """Competition-specific leaderboard"""
+    if pk:
+        # Specific competition leaderboard
+        competition = get_object_or_404(EssayCompetition, pk=pk, is_active=True)
+        essays = Essay.objects.filter(
+            competition=competition,
+            status='accepted'
+        ).select_related('user').order_by('-total_score')
+        
+        # Add rank to each essay (handling ties correctly)
+        rank = 1
+        prev_score = None
+        same_score_count = 1
+        
+        for i, essay in enumerate(essays, 1):
+            if prev_score is None:
+                essay.rank = 1
+                prev_score = essay.total_score
+                same_score_count = 1
+            elif essay.total_score == prev_score:
+                # Same score as previous, same rank
+                essay.rank = rank
+                same_score_count += 1
+            else:
+                # Different score, increment rank
+                rank = i
+                essay.rank = rank
+                prev_score = essay.total_score
+                same_score_count = 1
+        
+        # Get user's essays if authenticated
+        user_essays = None
+        if request.user.is_authenticated:
+            user_essays = essays.filter(user=request.user)
+        
+        page_title = f'Leaderboard: {competition.title}'
+        
+    else:
+        # Global view - show list of competitions with leaderboards
+        competitions = EssayCompetition.objects.filter(
+            is_active=True
+        ).annotate(
+            accepted_count=models.Count('essay', filter=models.Q(essay__status='accepted'))
+        ).filter(accepted_count__gt=0).order_by('-created_at')
+        
+        return render(request, 'competition/competition_list.html', {
+            'competitions': competitions,
+            'page_title': 'Competition Leaderboards'
+        })
+    
+    context = {
+        'competition': competition,
+        'essays': essays,
+        'page_title': page_title,
+        'user_essays': user_essays,  # Pass pre-filtered user essays
+    }
+    return render(request, 'competition/leaderboard.html', context)
+
+@login_required
+def my_results(request):
+    """User's own results page - grouped by competition"""
+    # Get all competitions where user has accepted essays
+    competitions = EssayCompetition.objects.filter(
+        essay__user=request.user,
+        essay__status='accepted'
+    ).distinct().order_by('-created_at')
+    
+    # Get essays for each competition
+    competition_results = []
+    for competition in competitions:
+        essays = Essay.objects.filter(
+            competition=competition,
+            user=request.user,
+            status='accepted'
+        ).order_by('-total_score')
+        
+        # Calculate rank for each essay
+        for essay in essays:
+            # Calculate rank within competition
+            rank = Essay.objects.filter(
+                competition=competition,
+                status='accepted',
+                total_score__gt=essay.total_score
+            ).count() + 1
+            essay.competition_rank = rank
+        
+        competition_results.append({
+            'competition': competition,
+            'essays': essays
+        })
+    
+    context = {
+        'competition_results': competition_results,
+        'page_title': 'My Results'
+    }
+    return render(request, 'competition/my_results.html', context)
+
+@login_required
+def essay_result_detail(request, pk):
+    """Detailed view of a single essay result"""
+    essay = get_object_or_404(Essay, pk=pk, user=request.user)
+    
+    # Check if essay has been evaluated
+    if essay.status != 'accepted':
+        messages.warning(request, "Essay hasn't been evaluated yet")
+        return redirect('competition:my_results')
+    
+    # Calculate rank within this competition
+    rank = Essay.objects.filter(
+        competition=essay.competition,
+        status='accepted',
+        total_score__gt=essay.total_score
+    ).count() + 1
+    
+    # Get total participants in this competition
+    total_participants = Essay.objects.filter(
+        competition=essay.competition,
+        status='accepted'
+    ).count()
+    
+    context = {
+        'essay': essay,
+        'rank': rank,
+        'total_participants': total_participants,
+        'page_title': f'Results: {essay.title}'
+    }
+    return render(request, 'competition/essay_result_detail.html', context)
 

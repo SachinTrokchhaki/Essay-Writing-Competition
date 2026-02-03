@@ -1,0 +1,124 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Essay Results</h1>
+                <a href="{% url 'competition:my_results' %}" class="btn btn-outline-secondary">
+                    Back to My Results
+                </a>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="mb-0">{{ essay.title }}</h3>
+                    <small class="text-muted">Submitted to: {{ essay.competition.title }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-success">Accepted</span>
+                            </p>
+                            <p><strong>Submitted:</strong> {{ essay.submitted_at|date:"F j, Y, g:i a" }}</p>
+                            <p><strong>Evaluated:</strong> {{ essay.evaluated_at|date:"F j, Y, g:i a" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Competition Rank:</strong> 
+                                <span class="badge bg-primary fs-5">#{{ rank }}</span>
+                            </p>
+                            <p><strong>Word Count:</strong> {{ essay.word_count }}</p>
+                            <p><strong>Reviewed By:</strong> {{ essay.reviewed_by.get_full_name|default:essay.reviewed_by.username }}</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Score Breakdown -->
+                    <h4 class="mb-3">Score Breakdown</h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card text-center mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">Topic Relevance</h5>
+                                    <h2 class="display-6 text-primary">{{ essay.topic_score }}</h2>
+                                    <p class="text-muted">30% weight</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">Cohesion</h5>
+                                    <h2 class="display-6 text-info">{{ essay.cohesion_score }}</h2>
+                                    <p class="text-muted">30% weight</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">Grammar</h5>
+                                    <h2 class="display-6 text-success">{{ essay.grammar_score }}</h2>
+                                    <p class="text-muted">25% weight</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">Structure</h5>
+                                    <h2 class="display-6 text-warning">{{ essay.structure_score }}</h2>
+                                    <p class="text-muted">15% weight</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Final Score -->
+                    <div class="text-center mt-4">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h3 class="card-title">Final Score</h3>
+                                <h1 class="display-1 text-primary">{{ essay.total_score }}</h1>
+                                <p class="text-muted">
+                                    Weighted average of all criteria
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Essay Content -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Essay Content</h4>
+                </div>
+                <div class="card-body">
+                    <div class="essay-content">
+                        {{ essay.content|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.essay-content {
+    font-family: 'Georgia', serif;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    text-align: justify;
+}
+.essay-content p {
+    text-indent: 2em;
+    margin-bottom: 1.5rem;
+}
+</style>
+{% endblock %}

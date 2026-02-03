@@ -189,6 +189,7 @@
                                         <th>Competition</th>
                                         <th>Submitted</th>
                                         <th>Status</th>
+                                        <th>Ranking</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -226,6 +227,18 @@
                                                 </span>
                                             {% else %}
                                                 <span class="badge bg-secondary">Unknown</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if essay.status == 'accepted' and essay.competition %}
+                                                <a href="/competition/leaderboard/{{ essay.competition.pk }}/"
+                                                   class="btn btn-sm btn-success">
+                                                    <i class="fas fa-trophy"></i>
+                                                </a>
+                                            {% elif essay.status == 'submitted' %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -291,7 +304,7 @@
             </div>
 
             <!-- Quick Links -->
-            <div class="card">
+            <div class="card mb-4">
                 <div class="card-header bg-white border-0">
                     <h5 class="mb-0"><i class="fas fa-bolt text-info me-2"></i> Quick Actions</h5>
                 </div>
@@ -303,12 +316,41 @@
                         <a href="{% url 'user:my_essays' %}" class="btn btn-outline-success btn-block">
                             <i class="fas fa-file-alt me-2"></i> View All Essays
                         </a>
+                        <a href="{% url 'competition:leaderboard' %}" class="btn btn-outline-warning btn-block">
+                            <i class="fas fa-trophy me-2"></i> View Leaderboards
+                        </a>
                         <a href="{% url 'user:edit_profile' %}" class="btn btn-outline-secondary btn-block">
                             <i class="fas fa-user-edit me-2"></i> Edit Profile
                         </a>
                         <a href="{% url 'user:logout' %}" class="btn btn-outline-danger btn-block">
                             <i class="fas fa-sign-out-alt me-2"></i> Logout
                         </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Competition Leaderboards -->
+            <div class="card">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-trophy text-warning me-2"></i> Competition Leaderboards</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'competition:leaderboard' %}" class="btn btn-warning btn-block">
+                            <i class="fas fa-list me-2"></i> View All Leaderboards
+                        </a>
+                        
+                        {% if user_competitions_with_leaderboards %}
+                            <hr class="my-2">
+                            <h6 class="text-muted mb-2">Your Competitions:</h6>
+                            {% for competition in user_competitions_with_leaderboards %}
+                            <a href="/competition/leaderboard/{{ competition.pk }}/" 
+                               class="btn btn-outline-warning btn-block btn-sm text-start">
+                                <i class="fas fa-chart-line me-2"></i>
+                                {{ competition.title|truncatechars:25 }}
+                            </a>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -335,4 +377,4 @@
         });
     });
 </script>
-{% endblock %}~
+{% endblock %}

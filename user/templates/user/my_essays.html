@@ -37,6 +37,7 @@
                   <th>Submitted On</th>
                   <th>Reviewed By</th>
                   <th>Actions</th>
+                  <th>Ranking</th>
                 </tr>
               </thead>
 
@@ -78,6 +79,19 @@
                     >
                       View
                     </button>
+                  </td>
+                  <td>
+                    {% if essay.status == 'accepted' %}
+                        <a href="{% url 'competition:leaderboard_detail' essay.competition.pk %}" 
+                           class="btn btn-sm btn-success">
+                            <i class="fas fa-trophy me-1"></i>
+                            View Rank
+                        </a>
+                    {% elif essay.status == 'submitted' %}
+                        <span class="badge bg-warning text-dark">Pending Evaluation</span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
                   </td>
                 </tr>
                 {% endfor %}
@@ -406,1352 +420,1039 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           <i class="bi bi-x-circle"></i> Close
         </button>
-        <button type="button" class="btn btn-primary" onclick="printEssay()">
-          <i class="bi bi-printer"></i> Print
-        </button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// ============================================
-// DRAFT SAVE FUNCTIONALITY FOR MY ESSAYS PAGE
-// ============================================
+    // ============================================
+    // DRAFT SAVE FUNCTIONALITY FOR MY ESSAYS PAGE
+    // ============================================
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Lucide icons if available
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-    
-    // Check if we have any draft save buttons
-    setupDraftSaveButtons();
-    
-    // Add notification styles
-    addNotificationStyles();
-    
-    // Setup essay view functionality
-    setupEssayView();
-    
-    // Setup auto-save reminders
-    setupAutoSaveReminder();
-    
-    // Add event listener for delete confirmation
-    setupDeleteConfirmations();
-    
-    // Setup bulk actions if we have drafts
-    const draftTables = document.querySelectorAll('.table-responsive');
-    if (draftTables.length > 0) {
-        // Show statistics for all drafts
-        showDraftStatistics();
-        
-        // Setup bulk actions only for drafts table (not submitted essays)
-        const draftsTable = document.querySelector('table:has(.bg-info)')?.closest('.card')?.querySelector('table') ||
-                           document.querySelector('table:has(.bg-warning)')?.closest('.card')?.querySelector('table');
-        if (draftsTable && draftsTable.querySelectorAll('tbody tr').length > 0) {
-            setupBulkActions();
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
-    }
-});
-
-// ============================================
-// DRAFT STATISTICS - FIXED VERSION
-// ============================================
-
-function showDraftStatistics() {
-    // Get all draft rows from both drafts and rejected essays tables
-    const draftRows = document.querySelectorAll('table tbody tr');
-    const draftCount = draftRows.length;
-    
-    // Calculate total words from all tables
-    let totalWords = 0;
-    let validDraftCount = 0;
-    
-    draftRows.forEach(row => {
-        // Try to find word count in different possible locations
-        const wordBadge = row.querySelector('.badge.bg-light');
-        const tableCells = row.querySelectorAll('td');
         
-        let wordCountText = '';
+        setupDraftSaveButtons();
+        addNotificationStyles();
+        setupEssayView();
+        setupAutoSaveReminder();
+        setupDeleteConfirmations();
         
-        // First try to get from badge
-        if (wordBadge) {
-            wordCountText = wordBadge.textContent;
-        } 
-        // Then try to get from table cells
-        else {
-            // Check each cell for word count pattern
-            tableCells.forEach(cell => {
-                const text = cell.textContent;
-                if (text.includes('words') || text.match(/\d+\s*(words|Words)/)) {
-                    wordCountText = text;
-                }
-            });
+        const draftTables = document.querySelectorAll('.table-responsive');
+        if (draftTables.length > 0) {
+            showDraftStatistics();
             
-            // If not found, check the third cell (usually word count)
-            if (!wordCountText && tableCells[2]) {
-                wordCountText = tableCells[2].textContent;
-            }
-        }
-        
-        if (wordCountText) {
-            // Extract numbers from text (handles "123 words" or "123")
-            const match = wordCountText.match(/(\d+)/);
-            if (match) {
-                const wordCount = parseInt(match[1]);
-                totalWords += wordCount;
-                validDraftCount++;
-                console.log(`Found word count: ${wordCount} from text: "${wordCountText}"`);
+            const draftsTable = document.querySelector('table:has(.bg-info)')?.closest('.card')?.querySelector('table') ||
+                               document.querySelector('table:has(.bg-warning)')?.closest('.card')?.querySelector('table');
+            if (draftsTable && draftsTable.querySelectorAll('tbody tr').length > 0) {
+                setupBulkActions();
             }
         }
     });
-    
-    const averageWords = validDraftCount > 0 ? Math.round(totalWords / validDraftCount) : 0;
-    
-    // Find oldest draft date
-    const oldestDate = getOldestDraftDate();
-    
-    // Create statistics display
-    const statsHtml = `
-        <div class="draft-stats card mb-4">
-            <div class="card-header bg-gradient-info text-white">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-graph-up me-2"></i>
-                    Draft Statistics
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="row g-0 text-center">
-                    <div class="col-md-3">
-                        <div class="p-4 border-end">
-                            <div class="stat-number display-6 fw-bold text-primary">${draftCount}</div>
-                            <div class="stat-label text-muted mt-2">Total Drafts</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="p-4 border-end">
-                            <div class="stat-number display-6 fw-bold text-success">${totalWords}</div>
-                            <div class="stat-label text-muted mt-2">Total Words</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="p-4 border-end">
-                            <div class="stat-number display-6 fw-bold text-warning">${averageWords}</div>
-                            <div class="stat-label text-muted mt-2">Avg Words/Draft</div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="p-4">
-                            <div class="stat-number display-6 fw-bold text-info">${oldestDate}</div>
-                            <div class="stat-label text-muted mt-2">Oldest Draft</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Insert statistics at the top of the page
-    const container = document.querySelector('.container.py-5 .row .col-md-12');
-    if (container) {
-        container.insertAdjacentHTML('afterbegin', statsHtml);
-    }
-}
 
-function getOldestDraftDate() {
-    let oldestDate = null;
-    
-    // Look for dates in the tables
-    document.querySelectorAll('table tbody tr').forEach(row => {
-        // Try to find date in table cells
-        const tableCells = row.querySelectorAll('td');
-        
-        tableCells.forEach(cell => {
-            const text = cell.textContent;
-            // Look for date patterns like "Mar 15, 2024" or "Mar 15, 2024 14:30"
-            const dateMatch = text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}/);
-            if (dateMatch) {
-                try {
-                    const date = new Date(dateMatch[0]);
-                    if (!oldestDate || date < oldestDate) {
-                        oldestDate = date;
-                    }
-                } catch (e) {
-                    console.log("Could not parse date:", dateMatch[0]);
-                }
-            }
-        });
-    });
-    
-    if (oldestDate) {
-        return oldestDate.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-        });
-    }
-    
-    return 'N/A';
-}
+    // ============================================
+    // DRAFT STATISTICS - FIXED VERSION
+    // ============================================
 
-// ============================================
-// ESSAY VIEW MODAL FUNCTIONALITY - FIXED VERSION
-// ============================================
-
-function setupEssayView() {
-    console.log("Setting up essay view functionality...");
-    
-    // Function to decode all HTML entities and Unicode escapes
-    function decodeContent(content) {
-        if (!content) return "";
+    function showDraftStatistics() {
+        const draftRows = document.querySelectorAll('table tbody tr');
+        const draftCount = draftRows.length;
         
-        let decoded = content;
+        let totalWords = 0;
+        let validDraftCount = 0;
         
-        // Decode Unicode escape sequences (\uXXXX)
-        decoded = decoded.replace(/\\u([\dA-F]{4})/gi, (match, hex) => 
-            String.fromCharCode(parseInt(hex, 16))
-        );
-        
-        // Decode HTML numeric entities (&#XXXX;)
-        decoded = decoded.replace(/&#(\d+);/g, (match, dec) => 
-            String.fromCharCode(parseInt(dec, 10))
-        );
-        
-        // Decode HTML hex entities (&#xXXXX;)
-        decoded = decoded.replace(/&#x([\dA-F]+);/gi, (match, hex) => 
-            String.fromCharCode(parseInt(hex, 16))
-        );
-        
-        // Decode common HTML entities
-        const entities = {
-            '&nbsp;': ' ',
-            '&amp;': '&',
-            '&lt;': '<',
-            '&gt;': '>',
-            '&quot;': '"',
-            '&#39;': "'",
-            '&apos;': "'"
-        };
-        
-        Object.keys(entities).forEach(entity => {
-            decoded = decoded.replace(new RegExp(entity, 'g'), entities[entity]);
-        });
-        
-        return decoded;
-    }
-    
-    // Clean and format essay content
-    function formatEssayContent(content) {
-        if (!content) return "";
-        
-        // Step 1: Decode all HTML entities
-        let cleanContent = decodeContent(content);
-        
-        // Step 2: Parse HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = cleanContent;
-        
-        // Step 3: Extract paragraphs
-        const paragraphs = tempDiv.querySelectorAll('p');
-        let formattedContent = '';
-        
-        if (paragraphs.length > 0) {
-            paragraphs.forEach(p => {
-                // Remove lock indicators and their parent spans
-                const lockIndicators = p.querySelectorAll('.lock-indicator, span[style*="left: -25px"]');
-                lockIndicators.forEach(indicator => indicator.remove());
-                
-                // Get text content
-                let text = p.textContent || p.innerText || '';
-                
-                // Clean up text
-                text = text
-                    .replace(/🔒/g, '')  // Remove any remaining lock emojis
-                    .replace(/\s+/g, ' ') // Normalize whitespace
-                    .trim();
-                
-                // Only add paragraph if it has content
-                if (text && text !== '&nbsp;' && text !== ' ' && text !== ' ') {
-                    formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${text}</p>`;
-                }
-            });
-        }
-        
-        // If no paragraphs were found, use the raw content
-        if (!formattedContent) {
-            // Remove HTML tags and clean
-            let text = cleanContent
-                .replace(/<[^>]*>/g, ' ')  // Remove HTML tags
-                .replace(/🔒/g, '')        // Remove lock emojis
-                .replace(/\s+/g, ' ')      // Normalize whitespace
-                .trim();
+        draftRows.forEach(row => {
+            const wordBadge = row.querySelector('.badge.bg-light');
+            const tableCells = row.querySelectorAll('td');
             
-            if (text) {
-                // Split into sentences and create paragraphs
-                const sentences = text.split(/\.\s+/);
-                let currentParagraph = '';
-                let sentenceCount = 0;
-                
-                sentences.forEach(sentence => {
-                    if (sentence.trim()) {
-                        currentParagraph += sentence.trim() + '. ';
-                        sentenceCount++;
-                        
-                        // Start new paragraph every 3-5 sentences
-                        if (sentenceCount >= 3) {
-                            formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentParagraph.trim()}</p>`;
-                            currentParagraph = '';
-                            sentenceCount = 0;
-                        }
+            let wordCountText = '';
+            
+            if (wordBadge) {
+                wordCountText = wordBadge.textContent;
+            } else {
+                tableCells.forEach(cell => {
+                    const text = cell.textContent;
+                    if (text.includes('words') || text.match(/\d+\s*(words|Words)/)) {
+                        wordCountText = text;
                     }
                 });
                 
-                // Add remaining sentences
-                if (currentParagraph) {
-                    formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentParagraph.trim()}</p>`;
+                if (!wordCountText && tableCells[2]) {
+                    wordCountText = tableCells[2].textContent;
                 }
             }
-        }
+            
+            if (wordCountText) {
+                const match = wordCountText.match(/(\d+)/);
+                if (match) {
+                    const wordCount = parseInt(match[1]);
+                    totalWords += wordCount;
+                    validDraftCount++;
+                }
+            }
+        });
         
-        return formattedContent || '<p class="text-muted">No content available.</p>';
-    }
-    
-    // Open essay modal
-    function openEssayModal(title, competition, content, wordCount, submittedDate, status, reviewer) {
-        console.log("Opening essay modal...");
-        console.log("Title:", title);
-        console.log("Raw content length:", content?.length || 0);
+        const averageWords = validDraftCount > 0 ? Math.round(totalWords / validDraftCount) : 0;
+        const oldestDate = getOldestDraftDate();
         
-        const modalContent = document.getElementById("essayModalContent");
-        if (!modalContent) {
-            console.error("Modal content element not found!");
-            return;
-        }
-        
-        // Format the content
-        const formattedContent = formatEssayContent(content);
-        const reviewedBy = reviewer && reviewer.trim() ? reviewer : "Not reviewed yet";
-        
-        // Create HTML structure
-        const html = `
-        <div class="essay-paper">
-            <div class="essay-header">
-                <h1 class="essay-title">${escapeHtml(title)}</h1>
-                <p class="essay-competition">${escapeHtml(competition)}</p>
-                
-                <div class="essay-meta">
-                    <span><strong>Submitted:</strong> ${escapeHtml(submittedDate)}</span>
-                    <span><strong>Reviewed by:</strong> ${escapeHtml(reviewedBy)}</span>
-                    <span><strong>Word Count:</strong> ${escapeHtml(wordCount)}</span>
-                    <span><strong>Status:</strong> ${escapeHtml(status.toUpperCase())}</span>
+        const statsHtml = `
+            <div class="draft-stats card mb-4">
+                <div class="card-header bg-gradient-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Draft Statistics
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="row g-0 text-center">
+                        <div class="col-md-3">
+                            <div class="p-4 border-end">
+                                <div class="stat-number display-6 fw-bold text-primary">${draftCount}</div>
+                                <div class="stat-label text-muted mt-2">Total Drafts</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-4 border-end">
+                                <div class="stat-number display-6 fw-bold text-success">${totalWords}</div>
+                                <div class="stat-label text-muted mt-2">Total Words</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-4 border-end">
+                                <div class="stat-number display-6 fw-bold text-warning">${averageWords}</div>
+                                <div class="stat-label text-muted mt-2">Avg Words/Draft</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-4">
+                                <div class="stat-number display-6 fw-bold text-info">${oldestDate}</div>
+                                <div class="stat-label text-muted mt-2">Oldest Draft</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <hr>
-            
-            <div class="essay-body">
-                ${formattedContent}
-            </div>
-        </div>
         `;
         
-        // Insert into modal
-        modalContent.innerHTML = html;
-        
-        // Show modal using Bootstrap
-        const modalElement = document.getElementById("essayModal");
-        if (!modalElement) {
-            console.error("Modal element not found!");
-            return;
+        const container = document.querySelector('.container.py-5 .row .col-md-12');
+        if (container) {
+            container.insertAdjacentHTML('afterbegin', statsHtml);
         }
-        
-        // Initialize and show modal
-        const modal = new bootstrap.Modal(modalElement);
-        modal.show();
-        
-        console.log("Modal shown successfully");
-    }
-    
-    // Simple HTML escaping function
-    function escapeHtml(text) {
-        if (!text) return "";
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
     }
 
-    // Button event binding for essay view
-    document.querySelectorAll('.viewEssayBtn').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log("View button clicked!");
-            
-            // Get data from button attributes
-            const title = btn.getAttribute('data-title') || '';
-            const competition = btn.getAttribute('data-competition') || '';
-            const content = btn.getAttribute('data-content') || '';
-            const wordCount = btn.getAttribute('data-words') || '0';
-            const submittedDate = btn.getAttribute('data-submitted') || '';
-            const status = btn.getAttribute('data-status') || '';
-            const reviewer = btn.getAttribute('data-reviewed-by') || '';
-            
-            console.log("Content preview:", content.substring(0, 200));
-            
-            // Open the modal
-            openEssayModal(
-                title,
-                competition,
-                content,
-                wordCount,
-                submittedDate,
-                status,
-                reviewer
-            );
-        });
-    });
-    
-    // Print function - FIXED for proper paragraph display
-    window.printEssay = function() {
-        const contentDiv = document.getElementById("essayModalContent");
-        if (!contentDiv) {
-            alert("Cannot print: No content available");
-            return;
-        }
-
-        // Get the essay data from the modal
-        const essayTitle = contentDiv.querySelector('.essay-title')?.textContent || "Essay";
-        const essayCompetition = contentDiv.querySelector('.essay-competition')?.textContent || "";
-        const essayMeta = contentDiv.querySelector('.essay-meta')?.innerHTML || "";
-        const essayBody = contentDiv.querySelector('.essay-body')?.innerHTML || "";
+    function getOldestDraftDate() {
+        let oldestDate = null;
         
-        // Extract just the text content for print (cleaner)
-        let printBody = '';
-        const paragraphs = contentDiv.querySelectorAll('.essay-body p');
-        
-        if (paragraphs.length > 0) {
-            paragraphs.forEach(p => {
-                const text = p.textContent || p.innerText || '';
-                if (text.trim()) {
-                    printBody += `<p style="text-indent: 2em; line-height: 1.8; margin-bottom: 1.2rem; text-align: justify;">${escapeHtml(text.trim())}</p>`;
+        document.querySelectorAll('table tbody tr').forEach(row => {
+            const tableCells = row.querySelectorAll('td');
+            
+            tableCells.forEach(cell => {
+                const text = cell.textContent;
+                const dateMatch = text.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}/);
+                if (dateMatch) {
+                    try {
+                        const date = new Date(dateMatch[0]);
+                        if (!oldestDate || date < oldestDate) {
+                            oldestDate = date;
+                        }
+                    } catch (e) {
+                        console.log("Could not parse date:", dateMatch[0]);
+                    }
                 }
             });
-        } else {
-            // Fallback to the HTML content
-            printBody = essayBody;
+        });
+        
+        if (oldestDate) {
+            return oldestDate.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
         }
+        
+        return 'N/A';
+    }
 
-        const printWindow = window.open("", "_blank");
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>${escapeHtml(essayTitle)} - Print</title>
-                <style>
-                    @page { 
-                        margin: 2cm; 
-                        @top-center {
-                            content: "${escapeHtml(essayTitle)}";
-                            font-size: 12pt;
+    // ============================================
+    // ESSAY VIEW MODAL FUNCTIONALITY - WITHOUT PRINT
+    // ============================================
+
+    function setupEssayView() {
+        function decodeContent(content) {
+            if (!content) return "";
+            
+            let decoded = content;
+            decoded = decoded.replace(/\\u([\dA-F]{4})/gi, (match, hex) => 
+                String.fromCharCode(parseInt(hex, 16))
+            );
+            decoded = decoded.replace(/&#(\d+);/g, (match, dec) => 
+                String.fromCharCode(parseInt(dec, 10))
+            );
+            decoded = decoded.replace(/&#x([\dA-F]+);/gi, (match, hex) => 
+                String.fromCharCode(parseInt(hex, 16))
+            );
+            
+            const entities = {
+                '&nbsp;': ' ',
+                '&amp;': '&',
+                '&lt;': '<',
+                '&gt;': '>',
+                '&quot;': '"',
+                '&#39;': "'",
+                '&apos;': "'"
+            };
+            
+            Object.keys(entities).forEach(entity => {
+                decoded = decoded.replace(new RegExp(entity, 'g'), entities[entity]);
+            });
+            
+            return decoded;
+        }
+        
+        function formatEssayContent(content) {
+            if (!content) return "";
+            
+            let cleanContent = decodeContent(content);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = cleanContent;
+            
+            const paragraphs = tempDiv.querySelectorAll('p');
+            let formattedContent = '';
+            
+            if (paragraphs.length > 0) {
+                paragraphs.forEach(p => {
+                    const lockIndicators = p.querySelectorAll('.lock-indicator, span[style*="left: -25px"]');
+                    lockIndicators.forEach(indicator => indicator.remove());
+                    
+                    let text = p.textContent || p.innerText || '';
+                    text = text
+                        .replace(/🔒/g, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    
+                    if (text && text !== '&nbsp;' && text !== ' ' && text !== ' ') {
+                        formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${text}</p>`;
+                    }
+                });
+            }
+            
+            if (!formattedContent) {
+                let text = cleanContent
+                    .replace(/<[^>]*>/g, ' ')
+                    .replace(/🔒/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                
+                if (text) {
+                    const sentences = text.split(/\.\s+/);
+                    let currentParagraph = '';
+                    let sentenceCount = 0;
+                    
+                    sentences.forEach(sentence => {
+                        if (sentence.trim()) {
+                            currentParagraph += sentence.trim() + '. ';
+                            sentenceCount++;
+                            
+                            if (sentenceCount >= 3) {
+                                formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentParagraph.trim()}</p>`;
+                                currentParagraph = '';
+                                sentenceCount = 0;
+                            }
                         }
-                        @bottom-center {
-                            content: "Page " counter(page);
-                            font-size: 10pt;
-                        }
-                    }
+                    });
                     
-                    body { 
-                        font-family: Georgia, "Times New Roman", serif;
-                        line-height: 1.8;
-                        color: #000;
-                        padding: 20px;
-                        font-size: 12pt;
-                        counter-reset: page;
+                    if (currentParagraph) {
+                        formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentParagraph.trim()}</p>`;
                     }
+                }
+            }
+            
+            return formattedContent || '<p class="text-muted">No content available.</p>';
+        }
+        
+        function openEssayModal(title, competition, content, wordCount, submittedDate, status, reviewer) {
+            const modalContent = document.getElementById("essayModalContent");
+            if (!modalContent) return;
+            
+            const formattedContent = formatEssayContent(content);
+            const reviewedBy = reviewer && reviewer.trim() ? reviewer : "Not reviewed yet";
+            
+            const html = `
+            <div class="essay-paper">
+                <div class="essay-header">
+                    <h1 class="essay-title">${escapeHtml(title)}</h1>
+                    <p class="essay-competition">${escapeHtml(competition)}</p>
                     
-                    .print-header {
-                        text-align: center;
-                        margin-bottom: 30px;
-                        border-bottom: 2px solid #000;
-                        padding-bottom: 20px;
-                    }
-                    
-                    .essay-title { 
-                        font-size: 24pt; 
-                        font-weight: bold; 
-                        margin-bottom: 10px;
-                    }
-                    
-                    .essay-competition {
-                        font-size: 14pt;
-                        color: #666;
-                        margin-bottom: 15px;
-                        font-style: italic;
-                    }
-                    
-                    .essay-meta {
-                        display: flex;
-                        justify-content: center;
-                        gap: 20px;
-                        font-size: 10pt;
-                        color: #444;
-                        margin-top: 15px;
-                        flex-wrap: wrap;
-                    }
-                    
-                    .essay-meta span {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        gap: 5px;
-                    }
-                    
-                    .essay-meta strong {
-                        font-weight: 600;
-                    }
-                    
-                    .essay-body {
-                        font-size: 12pt;
-                        text-align: justify;
-                        margin-top: 20px;
-                    }
-                    
-                    .essay-body p {
-                        text-indent: 2em;
-                        margin-bottom: 1.2rem;
-                        line-height: 1.8;
-                        text-align: justify;
-                        page-break-inside: avoid;
-                        orphans: 3;
-                        widows: 3;
-                    }
-                    
-                    /* Prevent paragraph breaking across pages */
-                    p {
-                        page-break-inside: avoid;
-                    }
-                    
-                    /* Page break control */
-                    .page-break {
-                        page-break-before: always;
-                    }
-                    
-                    @media print {
-                        body { 
-                            padding: 0;
-                            margin: 0;
-                        }
-                        
-                        .no-print {
-                            display: none !important;
-                        }
-                        
-                        a {
-                            color: #000;
-                            text-decoration: none;
-                        }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="print-header">
-                    <h1 class="essay-title">${escapeHtml(essayTitle)}</h1>
-                    <div class="essay-competition">${escapeHtml(essayCompetition)}</div>
-                    <div class="essay-meta">${essayMeta}</div>
+                    <div class="essay-meta">
+                        <span><strong>Submitted:</strong> ${escapeHtml(submittedDate)}</span>
+                        <span><strong>Reviewed by:</strong> ${escapeHtml(reviewedBy)}</span>
+                        <span><strong>Word Count:</strong> ${escapeHtml(wordCount)}</span>
+                        <span><strong>Status:</strong> ${escapeHtml(status.toUpperCase())}</span>
+                    </div>
                 </div>
+                
+                <hr>
                 
                 <div class="essay-body">
-                    ${printBody}
+                    ${formattedContent}
                 </div>
-                
-                <div class="no-print" style="text-align: center; margin-top: 30px; color: #666; font-size: 10pt;">
-                    Printed from Essay Competition Platform
-                </div>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-
-        // Wait for content to load, then print
-        setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-            setTimeout(() => printWindow.close(), 500);
-        }, 500);
-    };
-}
-
-// ============================================
-// REST OF THE FUNCTIONS
-// ============================================
-
-function setupDraftSaveButtons() {
-    // Find all Continue Writing buttons and attach save functionality
-    const continueButtons = document.querySelectorAll('a[href*="submit_essay"]');
-    
-    continueButtons.forEach(button => {
-        // Check if this is a draft URL
-        const url = button.getAttribute('href');
-        if (url.includes('?draft=')) {
-            // Extract draft ID from URL
-            const draftId = url.split('?draft=')[1];
+            </div>
+            `;
             
-            // Add draft ID to button for easy access
-            button.setAttribute('data-draft-id', draftId);
+            modalContent.innerHTML = html;
+            const modalElement = document.getElementById("essayModal");
+            if (!modalElement) return;
             
-            // Add click handler to save before navigating
-            button.addEventListener('click', function(e) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return "";
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.querySelectorAll('.viewEssayBtn').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 
-                const draftId = this.getAttribute('data-draft-id');
-                const url = this.getAttribute('href');
+                const title = btn.getAttribute('data-title') || '';
+                const competition = btn.getAttribute('data-competition') || '';
+                const content = btn.getAttribute('data-content') || '';
+                const wordCount = btn.getAttribute('data-words') || '0';
+                const submittedDate = btn.getAttribute('data-submitted') || '';
+                const status = btn.getAttribute('data-status') || '';
+                const reviewer = btn.getAttribute('data-reviewed-by') || '';
                 
-                // Show saving notification
-                showNotification('Loading draft...', 'info');
-                
-                // Navigate to the edit page
-                setTimeout(() => {
-                    window.location.href = url;
-                }, 1000);
+                openEssayModal(
+                    title,
+                    competition,
+                    content,
+                    wordCount,
+                    submittedDate,
+                    status,
+                    reviewer
+                );
             });
-        }
-    });
-}
-
-// Function to save draft from any page
-async function saveDraftFromAnywhere() {
-    // This function is called from submit_essay.html
-    // Here we just show a message that saving should be done on the edit page
-    showNotification('Please save your draft on the essay writing page', 'warning');
-    return false;
-}
-
-// ============================================
-// NOTIFICATION SYSTEM
-// ============================================
-
-function addNotificationStyles() {
-    if (!document.getElementById('notification-styles')) {
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = `
-            .custom-notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 1rem 1.5rem;
-                border-radius: 0.75rem;
-                z-index: 9999;
-                animation: slideIn 0.3s ease;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-                max-width: 400px;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            }
-            
-            .custom-notification.success {
-                background: #d1fae5;
-                border: 2px solid #10b981;
-                color: #065f46;
-            }
-            
-            .custom-notification.error {
-                background: #fee2e2;
-                border: 2px solid #dc2626;
-                color: #7f1d1d;
-            }
-            
-            .custom-notification.warning {
-                background: #fef3c7;
-                border: 2px solid #f59e0b;
-                color: #92400e;
-            }
-            
-            .custom-notification.info {
-                background: #dbeafe;
-                border: 2px solid #3b82f6;
-                color: #1e40af;
-            }
-            
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateX(100%);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            }
-        `;
-        document.head.appendChild(style);
+        });
     }
-}
 
-function showNotification(message, type = 'info') {
-    // Remove existing notification
-    document.querySelectorAll('.custom-notification').forEach(n => n.remove());
-    
-    const notification = document.createElement('div');
-    notification.className = `custom-notification ${type}`;
-    
-    const icons = {
-        success: 'check-circle',
-        error: 'alert-circle',
-        warning: 'alert-triangle',
-        info: 'info'
-    };
-    
-    const icon = icons[type] || 'info';
-    
-    notification.innerHTML = `
-        <i data-lucide="${icon}"></i>
-        <span>${message}</span>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Initialize icon if lucide is available
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        notification.style.transition = 'opacity 0.3s, transform 0.3s';
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
-}
-
-// ============================================
-// CSRF TOKEN HELPER
-// ============================================
-
-function getCSRFToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-}
-
-// ============================================
-// AUTO-SAVE REMINDER FOR DRAFTS
-// ============================================
-
-function setupAutoSaveReminder() {
-    // Check if there are any drafts that might need saving
-    const draftRows = document.querySelectorAll('tr[data-draft-id]');
-    
-    draftRows.forEach(row => {
-        const draftId = row.getAttribute('data-draft-id');
-        const lastSaved = row.querySelector('.last-saved')?.textContent;
+    function setupDraftSaveButtons() {
+        const continueButtons = document.querySelectorAll('a[href*="submit_essay"]');
         
-        if (lastSaved) {
-            // Parse date and check if it's older than 1 day
-            const lastSavedDate = new Date(lastSaved);
-            const now = new Date();
-            const hoursDiff = (now - lastSavedDate) / (1000 * 60 * 60);
-            
-            if (hoursDiff > 24) {
-                // Show reminder for old drafts
-                const reminder = document.createElement('div');
-                reminder.className = 'draft-reminder alert alert-warning alert-dismissible fade show';
-                reminder.innerHTML = `
-                    <i class="bi bi-clock-history me-2"></i>
-                    This draft was last saved ${Math.floor(hoursDiff/24)} days ago.
-                    Consider reviewing and updating it soon.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                row.appendChild(reminder);
-            }
-        }
-    });
-}
-
-// ============================================
-// DELETE CONFIRMATION ENHANCEMENT
-// ============================================
-
-function setupDeleteConfirmations() {
-    const deleteButtons = document.querySelectorAll('[data-bs-target^="#delete"]');
-    
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const targetId = this.getAttribute('data-bs-target');
-            const modal = document.querySelector(targetId);
-            
-            if (modal) {
-                // Add animation to modal
-                modal.querySelector('.modal-content').classList.add('animate__animated', 'animate__bounceIn');
+        continueButtons.forEach(button => {
+            const url = button.getAttribute('href');
+            if (url.includes('?draft=')) {
+                const draftId = url.split('?draft=')[1];
+                button.setAttribute('data-draft-id', draftId);
                 
-                // Remove animation after it completes
-                setTimeout(() => {
-                    modal.querySelector('.modal-content').classList.remove('animate__animated', 'animate__bounceIn');
-                }, 500);
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const draftId = this.getAttribute('data-draft-id');
+                    const url = this.getAttribute('href');
+                    
+                    showNotification('Loading draft...', 'info');
+                    
+                    setTimeout(() => {
+                        window.location.href = url;
+                    }, 1000);
+                });
             }
         });
-    });
-}
+    }
 
-// ============================================
-// BULK ACTIONS FOR DRAFTS
-// ============================================
+    // ============================================
+    // NOTIFICATION SYSTEM
+    // ============================================
 
-function setupBulkActions() {
-    // Create bulk actions container
-    const bulkActionsHtml = `
-        <div class="bulk-actions card mb-3 d-none" id="bulkActionsCard">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <i class="bi bi-check2-square me-2"></i>
-                        <span id="selectedCount">0</span> drafts selected
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-outline-primary btn-sm" onclick="continueSelectedDrafts()">
-                            <i class="bi bi-pencil-square me-1"></i> Continue Selected
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="deleteSelectedDrafts()">
-                            <i class="bi bi-trash me-1"></i> Delete Selected
-                        </button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
-                            <i class="bi bi-x-circle me-1"></i> Clear
-                        </button>
+    function addNotificationStyles() {
+        if (!document.getElementById('notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                .custom-notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 1rem 1.5rem;
+                    border-radius: 0.75rem;
+                    z-index: 9999;
+                    animation: slideIn 0.3s ease;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                    max-width: 400px;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                
+                .custom-notification.success {
+                    background: #d1fae5;
+                    border: 2px solid #10b981;
+                    color: #065f46;
+                }
+                
+                .custom-notification.error {
+                    background: #fee2e2;
+                    border: 2px solid #dc2626;
+                    color: #7f1d1d;
+                }
+                
+                .custom-notification.warning {
+                    background: #fef3c7;
+                    border: 2px solid #f59e0b;
+                    color: #92400e;
+                }
+                
+                .custom-notification.info {
+                    background: #dbeafe;
+                    border: 2px solid #3b82f6;
+                    color: #1e40af;
+                }
+                
+                @keyframes slideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateX(100%);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        document.querySelectorAll('.custom-notification').forEach(n => n.remove());
+        
+        const notification = document.createElement('div');
+        notification.className = `custom-notification ${type}`;
+        
+        const icons = {
+            success: 'check-circle',
+            error: 'alert-circle',
+            warning: 'alert-triangle',
+            info: 'info'
+        };
+        
+        const icon = icons[type] || 'info';
+        
+        notification.innerHTML = `
+            <i data-lucide="${icon}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            notification.style.transition = 'opacity 0.3s, transform 0.3s';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+
+    // ============================================
+    // AUTO-SAVE REMINDER FOR DRAFTS
+    // ============================================
+
+    function setupAutoSaveReminder() {
+        const draftRows = document.querySelectorAll('tr[data-draft-id]');
+        
+        draftRows.forEach(row => {
+            const draftId = row.getAttribute('data-draft-id');
+            const lastSaved = row.querySelector('.last-saved')?.textContent;
+            
+            if (lastSaved) {
+                const lastSavedDate = new Date(lastSaved);
+                const now = new Date();
+                const hoursDiff = (now - lastSavedDate) / (1000 * 60 * 60);
+                
+                if (hoursDiff > 24) {
+                    const reminder = document.createElement('div');
+                    reminder.className = 'draft-reminder alert alert-warning alert-dismissible fade show';
+                    reminder.innerHTML = `
+                        <i class="bi bi-clock-history me-2"></i>
+                        This draft was last saved ${Math.floor(hoursDiff/24)} days ago.
+                        Consider reviewing and updating it soon.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    row.appendChild(reminder);
+                }
+            }
+        });
+    }
+
+    // ============================================
+    // DELETE CONFIRMATION ENHANCEMENT
+    // ============================================
+
+    function setupDeleteConfirmations() {
+        const deleteButtons = document.querySelectorAll('[data-bs-target^="#delete"]');
+        
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-bs-target');
+                const modal = document.querySelector(targetId);
+                
+                if (modal) {
+                    modal.querySelector('.modal-content').classList.add('animate__animated', 'animate__bounceIn');
+                    
+                    setTimeout(() => {
+                        modal.querySelector('.modal-content').classList.remove('animate__animated', 'animate__bounceIn');
+                    }, 500);
+                }
+            });
+        });
+    }
+
+    // ============================================
+    // BULK ACTIONS FOR DRAFTS
+    // ============================================
+
+    function setupBulkActions() {
+        const bulkActionsHtml = `
+            <div class="bulk-actions card mb-3 d-none" id="bulkActionsCard">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-check2-square me-2"></i>
+                            <span id="selectedCount">0</span> drafts selected
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary btn-sm" onclick="continueSelectedDrafts()">
+                                <i class="bi bi-pencil-square me-1"></i> Continue Selected
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteSelectedDrafts()">
+                                <i class="bi bi-trash me-1"></i> Delete Selected
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+                                <i class="bi bi-x-circle me-1"></i> Clear
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-    
-    // Insert bulk actions
-    const tableContainer = document.querySelector('.table-responsive');
-    if (tableContainer) {
-        tableContainer.insertAdjacentHTML('beforebegin', bulkActionsHtml);
-    }
-    
-    // Add checkboxes to each row
-    const tableRows = document.querySelectorAll('table tbody tr');
-    tableRows.forEach((row, index) => {
-        const checkboxCell = document.createElement('td');
-        checkboxCell.innerHTML = `
-            <div class="form-check">
-                <input class="form-check-input draft-checkbox" type="checkbox" value="${index}" data-draft-id="${row.getAttribute('data-draft-id') || ''}">
-            </div>
         `;
-        row.insertBefore(checkboxCell, row.firstChild);
         
-        // Add data-draft-id if not present
-        if (!row.hasAttribute('data-draft-id')) {
-            const draftId = row.querySelector('a[href*="draft="]')?.href.split('draft=')[1];
-            if (draftId) {
-                row.setAttribute('data-draft-id', draftId);
-            }
+        const tableContainer = document.querySelector('.table-responsive');
+        if (tableContainer) {
+            tableContainer.insertAdjacentHTML('beforebegin', bulkActionsHtml);
         }
-    });
-    
-    // Add checkbox to header
-    const tableHeader = document.querySelector('table thead tr');
-    if (tableHeader) {
-        const headerCheckbox = document.createElement('th');
-        headerCheckbox.innerHTML = `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
-            </div>
-        `;
-        tableHeader.insertBefore(headerCheckbox, tableHeader.firstChild);
         
-        // Select all functionality
-        document.getElementById('selectAllCheckbox').addEventListener('change', function(e) {
-            const checkboxes = document.querySelectorAll('.draft-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = e.target.checked;
+        const tableRows = document.querySelectorAll('table tbody tr');
+        tableRows.forEach((row, index) => {
+            const checkboxCell = document.createElement('td');
+            checkboxCell.innerHTML = `
+                <div class="form-check">
+                    <input class="form-check-input draft-checkbox" type="checkbox" value="${index}" data-draft-id="${row.getAttribute('data-draft-id') || ''}">
+                </div>
+            `;
+            row.insertBefore(checkboxCell, row.firstChild);
+            
+            if (!row.hasAttribute('data-draft-id')) {
+                const draftId = row.querySelector('a[href*="draft="]')?.href.split('draft=')[1];
+                if (draftId) {
+                    row.setAttribute('data-draft-id', draftId);
+                }
+            }
+        });
+        
+        const tableHeader = document.querySelector('table thead tr');
+        if (tableHeader) {
+            const headerCheckbox = document.createElement('th');
+            headerCheckbox.innerHTML = `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
+                </div>
+            `;
+            tableHeader.insertBefore(headerCheckbox, tableHeader.firstChild);
+            
+            document.getElementById('selectAllCheckbox').addEventListener('change', function(e) {
+                const checkboxes = document.querySelectorAll('.draft-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+                updateSelectionCount();
             });
-            updateSelectionCount();
+        }
+        
+        document.querySelectorAll('.draft-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectionCount);
         });
     }
-    
-    // Individual checkbox functionality
-    document.querySelectorAll('.draft-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelectionCount);
-    });
-}
 
-function updateSelectionCount() {
-    const selected = document.querySelectorAll('.draft-checkbox:checked').length;
-    document.getElementById('selectedCount').textContent = selected;
-    
-    const bulkActionsCard = document.getElementById('bulkActionsCard');
-    if (selected > 0) {
-        bulkActionsCard.classList.remove('d-none');
-    } else {
-        bulkActionsCard.classList.add('d-none');
-    }
-}
-
-function continueSelectedDrafts() {
-    const selected = document.querySelectorAll('.draft-checkbox:checked');
-    if (selected.length === 0) return;
-    
-    if (selected.length === 1) {
-        // Single draft - go directly to it
-        const draftId = selected[0].getAttribute('data-draft-id');
-        if (draftId) {
-            const draftLink = document.querySelector(`a[href*="draft=${draftId}"]`);
-            if (draftLink) {
-                window.location.href = draftLink.href;
-            }
+    function updateSelectionCount() {
+        const selected = document.querySelectorAll('.draft-checkbox:checked').length;
+        document.getElementById('selectedCount').textContent = selected;
+        
+        const bulkActionsCard = document.getElementById('bulkActionsCard');
+        if (selected > 0) {
+            bulkActionsCard.classList.remove('d-none');
+        } else {
+            bulkActionsCard.classList.add('d-none');
         }
-    } else {
-        // Multiple drafts - show warning
-        showNotification(`Please select only one draft to continue writing`, 'warning');
     }
-}
 
-function deleteSelectedDrafts() {
-    const selected = document.querySelectorAll('.draft-checkbox:checked');
-    if (selected.length === 0) return;
-    
-    if (confirm(`Are you sure you want to delete ${selected.length} draft(s)? This action cannot be undone.`)) {
-        // Here you would typically make an API call to delete multiple drafts
-        showNotification(`Bulk delete functionality would be implemented here`, 'info');
+    function continueSelectedDrafts() {
+        const selected = document.querySelectorAll('.draft-checkbox:checked');
+        if (selected.length === 0) return;
+        
+        if (selected.length === 1) {
+            const draftId = selected[0].getAttribute('data-draft-id');
+            if (draftId) {
+                const draftLink = document.querySelector(`a[href*="draft=${draftId}"]`);
+                if (draftLink) {
+                    window.location.href = draftLink.href;
+                }
+            }
+        } else {
+            showNotification(`Please select only one draft to continue writing`, 'warning');
+        }
     }
-}
 
-function clearSelection() {
-    document.querySelectorAll('.draft-checkbox').forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    document.getElementById('selectAllCheckbox').checked = false;
-    updateSelectionCount();
-}
+    function deleteSelectedDrafts() {
+        const selected = document.querySelectorAll('.draft-checkbox:checked');
+        if (selected.length === 0) return;
+        
+        if (confirm(`Are you sure you want to delete ${selected.length} draft(s)? This action cannot be undone.`)) {
+            showNotification(`Bulk delete functionality would be implemented here`, 'info');
+        }
+    }
 
-// Auto-close alerts after 5 seconds
-setTimeout(function() {
-    const alerts = document.querySelectorAll(".alert");
-    alerts.forEach(function(alert) {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
-    });
-}, 5000);
+    function clearSelection() {
+        document.querySelectorAll('.draft-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        document.getElementById('selectAllCheckbox').checked = false;
+        updateSelectionCount();
+    }
+
+    // Auto-close alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll(".alert");
+        alerts.forEach(function(alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
 </script>
 
 <style>
-/* DRAFT STATISTICS CARD - CLEAN DESIGN WITH PROPER SPACING */
-.draft-stats {
-    border: none;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 2rem !important;
-    border-top: 4px solid #17a2b8;
-    margin-top: 2rem !important; 
-}
+    /* DRAFT STATISTICS CARD - CLEAN DESIGN WITH PROPER SPACING */
+    .draft-stats {
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 2rem !important;
+        border-top: 4px solid #17a2b8;
+        margin-top: 2rem !important; 
+    }
 
-.draft-stats .card-header {
-    background: linear-gradient(135deg, #17a2b8, #20c997);
-    border: none;
-    padding: 1.25rem 1.5rem;
-    position: relative;
-}
+    .draft-stats .card-header {
+        background: linear-gradient(135deg, #17a2b8, #20c997);
+        border: none;
+        padding: 1.25rem 1.5rem;
+        position: relative;
+    }
 
-.draft-stats .card-header::before {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #17a2b8, #20c997);
-    border-radius: 12px 12px 0 0;
-}
+    .draft-stats .card-header::before {
+        content: '';
+        position: absolute;
+        top: -4px;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #17a2b8, #20c997);
+        border-radius: 12px 12px 0 0;
+    }
 
-.draft-stats .card-header .card-title {
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    color: white;
-}
+    .draft-stats .card-header .card-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        color: white;
+    }
 
-.draft-stats .card-header .card-title i {
-    font-size: 1.2rem;
-}
+    .draft-stats .card-header .card-title i {
+        font-size: 1.2rem;
+    }
 
-.draft-stats .card-body {
-    padding: 0;
-}
+    .draft-stats .card-body {
+        padding: 0;
+    }
 
-.draft-stats .stat-number {
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    line-height: 1.2;
-    font-size: 2.5rem;
-}
-
-.draft-stats .stat-label {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #6c757d !important;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.draft-stats .border-end {
-    border-right: 1px solid #e9ecef !important;
-}
-
-.draft-stats .p-4 {
-    padding: 1.5rem !important;
-    transition: background-color 0.2s ease;
-    position: relative;
-}
-
-.draft-stats .col-md-3:hover .p-4 {
-    background-color: rgba(248, 249, 250, 0.7);
-}
-
-/* Color coding for the numbers */
-.draft-stats .text-primary {
-    color: #4361ee !important;
-}
-
-.draft-stats .text-success {
-    color: #06d6a0 !important;
-}
-
-.draft-stats .text-warning {
-    color: #ff9e00 !important;
-}
-
-.draft-stats .text-info {
-    color: #118ab2 !important;
-}
-
-/* Add subtle icon behind numbers */
-.draft-stats .p-4::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0.05;
-    font-size: 3rem;
-    pointer-events: none;
-}
-
-.draft-stats .col-md-3:nth-child(1) .p-4::before {
-    content: '📄';
-}
-
-.draft-stats .col-md-3:nth-child(2) .p-4::before {
-    content: '📝';
-}
-
-.draft-stats .col-md-3:nth-child(3) .p-4::before {
-    content: '📊';
-}
-
-.draft-stats .col-md-3:nth-child(4) .p-4::before {
-    content: '📅';
-}
-
-/* Add spacing between navbar and content */
-.container.py-5 {
-    padding-top: 2.5rem !important;
-}
-
-/* Ensure page title has proper spacing */
-.container.py-5 .row .col-md-12 h1.mb-4 {
-    margin-top: 0.5rem;
-    margin-bottom: 1.5rem !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
     .draft-stats .stat-number {
-        font-size: 2rem !important;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+        font-size: 2.5rem;
     }
-    
-    .draft-stats .p-4 {
-        padding: 1.25rem 1rem !important;
-    }
-    
-    .draft-stats .border-end {
-        border-right: none !important;
-        border-bottom: 1px solid #e9ecef !important;
-    }
-    
-    .draft-stats .col-md-3:last-child .p-4 {
-        border-bottom: none !important;
-    }
-    
-    .container.py-5 {
-        padding-top: 2rem !important;
-    }
-}
 
-@media (max-width: 576px) {
-    .draft-stats .stat-number {
-        font-size: 1.75rem !important;
-    }
-    
-    .draft-stats .p-4 {
-        padding: 1rem 0.75rem !important;
-    }
-    
     .draft-stats .stat-label {
-        font-size: 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #6c757d !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
-}
 
-/* ESSAY MODAL STYLES */
-.essay-paper {
-    background: #ffffff;
-    padding: 30px 40px;
-    font-family: Georgia, "Times New Roman", serif;
-    color: #2c3e50;
-    line-height: 1.6;
-}
+    .draft-stats .border-end {
+        border-right: 1px solid #e9ecef !important;
+    }
 
-.essay-header {
-    text-align: center;
-    margin-bottom: 30px;
-}
+    .draft-stats .p-4 {
+        padding: 1.5rem !important;
+        transition: background-color 0.2s ease;
+        position: relative;
+    }
 
-.essay-title {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #2c3e50;
-}
+    .draft-stats .col-md-3:hover .p-4 {
+        background-color: rgba(248, 249, 250, 0.7);
+    }
 
-.essay-competition {
-    font-size: 1.1rem;
-    color: #7f8c8d;
-    margin-bottom: 20px;
-    font-style: italic;
-}
+    .draft-stats .text-primary {
+        color: #4361ee !important;
+    }
 
-.essay-meta {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    font-size: 0.9rem;
-    color: #34495e;
-    margin-top: 15px;
-    flex-wrap: wrap;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-}
+    .draft-stats .text-success {
+        color: #06d6a0 !important;
+    }
 
-.essay-meta span {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    padding: 0 10px;
-}
+    .draft-stats .text-warning {
+        color: #ff9e00 !important;
+    }
 
-.essay-meta strong {
-    color: #2c3e50;
-    font-weight: 600;
-}
+    .draft-stats .text-info {
+        color: #118ab2 !important;
+    }
 
-.essay-body {
-    font-size: 1.1rem;
-    line-height: 1.8;
-    text-align: justify;
-    color: #2c3e50;
-    margin-top: 20px;
-}
+    .draft-stats .p-4::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0.05;
+        font-size: 3rem;
+        pointer-events: none;
+    }
 
-.essay-body p {
-    text-indent: 2em;
-    line-height: 1.8;
-    text-align: justify;
-    margin-bottom: 1.5rem;
-    color: #2c3e50;
-}
+    .draft-stats .col-md-3:nth-child(1) .p-4::before {
+        content: '📄';
+    }
 
-.modal-body {
-    max-height: 70vh;
-    overflow-y: auto;
-    padding: 20px;
-}
+    .draft-stats .col-md-3:nth-child(2) .p-4::before {
+        content: '📝';
+    }
 
-@media (max-width: 768px) {
+    .draft-stats .col-md-3:nth-child(3) .p-4::before {
+        content: '📊';
+    }
+
+    .draft-stats .col-md-3:nth-child(4) .p-4::before {
+        content: '📅';
+    }
+
+    .container.py-5 {
+        padding-top: 2.5rem !important;
+    }
+
+    .container.py-5 .row .col-md-12 h1.mb-4 {
+        margin-top: 0.5rem;
+        margin-bottom: 1.5rem !important;
+    }
+
+    @media (max-width: 768px) {
+        .draft-stats .stat-number {
+            font-size: 2rem !important;
+        }
+        
+        .draft-stats .p-4 {
+            padding: 1.25rem 1rem !important;
+        }
+        
+        .draft-stats .border-end {
+            border-right: none !important;
+            border-bottom: 1px solid #e9ecef !important;
+        }
+        
+        .draft-stats .col-md-3:last-child .p-4 {
+            border-bottom: none !important;
+        }
+        
+        .container.py-5 {
+            padding-top: 2rem !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .draft-stats .stat-number {
+            font-size: 1.75rem !important;
+        }
+        
+        .draft-stats .p-4 {
+            padding: 1rem 0.75rem !important;
+        }
+        
+        .draft-stats .stat-label {
+            font-size: 0.75rem;
+        }
+    }
+
+    /* ESSAY MODAL STYLES */
     .essay-paper {
+        background: #ffffff;
+        padding: 30px 40px;
+        font-family: Georgia, "Times New Roman", serif;
+        color: #2c3e50;
+        line-height: 1.6;
+    }
+
+    .essay-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .essay-title {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #2c3e50;
+    }
+
+    .essay-competition {
+        font-size: 1.1rem;
+        color: #7f8c8d;
+        margin-bottom: 20px;
+        font-style: italic;
+    }
+
+    .essay-meta {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: #34495e;
+        margin-top: 15px;
+        flex-wrap: wrap;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .essay-meta span {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 0 10px;
+    }
+
+    .essay-meta strong {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .essay-body {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        text-align: justify;
+        color: #2c3e50;
+        margin-top: 20px;
+    }
+
+    .essay-body p {
+        text-indent: 2em;
+        line-height: 1.8;
+        text-align: justify;
+        margin-bottom: 1.5rem;
+        color: #2c3e50;
+    }
+
+    .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
         padding: 20px;
     }
-    
-    .essay-meta {
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start;
+
+    @media (max-width: 768px) {
+        .essay-paper {
+            padding: 20px;
+        }
+        
+        .essay-meta {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        
+        .essay-meta span {
+            flex-direction: row;
+            gap: 10px;
+            justify-content: space-between;
+            width: 100%;
+        }
     }
-    
-    .essay-meta span {
-        flex-direction: row;
-        gap: 10px;
-        justify-content: space-between;
-        width: 100%;
+
+    .modal-content {
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     }
-}
 
-/* Make sure modal is visible */
-.modal-content {
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 10px 10px 0 0;
-}
-
-.modal-footer {
-    background: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-    border-radius: 0 0 10px 10px;
-}
-
-/* Additional styles for the My Essays page */
-.draft-reminder {
-    margin: 5px 0;
-    padding: 8px 12px;
-    font-size: 0.875rem;
-    border-radius: 6px;
-}
-
-/* Bulk actions styling */
-.bulk-actions {
-    border: 2px solid #0d6efd;
-    background: rgba(13, 110, 253, 0.05);
-}
-
-/* Checkbox styling */
-.form-check-input {
-    width: 1.1em;
-    height: 1.1em;
-    cursor: pointer;
-}
-
-.form-check-input:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-/* Row selection styling */
-.table tbody tr.selected {
-    background-color: rgba(13, 110, 253, 0.1) !important;
-}
-
-/* Animation for modals */
-@keyframes bounceIn {
-    from {
-        opacity: 0;
-        transform: scale(0.8);
+    .modal-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        border-radius: 10px 10px 0 0;
     }
-    to {
-        opacity: 1;
-        transform: scale(1);
+
+    .modal-footer {
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        border-radius: 0 0 10px 10px;
     }
-}
 
-.animate__bounceIn {
-    animation: bounceIn 0.5s ease-out;
-}
-
-/* Enhanced button styles */
-.btn-sm {
-    border-radius: 0.5rem;
-    transition: all 0.2s ease;
-    font-weight: 500;
-}
-
-.btn-sm:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-    border: none;
-}
-
-.btn-warning {
-    background: linear-gradient(135deg, #ffc107, #e0a800);
-    border: none;
-    color: #000;
-}
-
-.btn-outline-danger {
-    border-width: 2px;
-}
-
-.btn-outline-danger:hover {
-    background-color: #dc3545;
-    color: white;
-}
-
-/* Table enhancements */
-.table-hover tbody tr {
-    transition: background-color 0.2s ease;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(13, 110, 253, 0.05);
-}
-
-/* Card enhancements */
-.card {
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 1rem;
-    overflow: hidden;
-}
-
-.card-header {
-    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
-}
-
-/* Badge enhancements */
-.badge {
-    font-weight: 600;
-    letter-spacing: 0.3px;
-}
-
-/* Modal enhancements */
-.modal-content {
-    border-radius: 1rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .bulk-actions .btn-group {
-        flex-wrap: wrap;
-        gap: 5px;
-    }
-    
-    .bulk-actions .btn {
-        margin: 2px;
-    }
-    
-    .table td, .table th {
-        padding: 0.75rem 0.5rem;
-    }
-    
-    .btn-sm {
-        padding: 0.375rem 0.75rem;
+    .draft-reminder {
+        margin: 5px 0;
+        padding: 8px 12px;
         font-size: 0.875rem;
+        border-radius: 6px;
     }
-    
-    .card-header .card-title {
-        font-size: 1.25rem;
+
+    .bulk-actions {
+        border: 2px solid #0d6efd;
+        background: rgba(13, 110, 253, 0.05);
     }
-}
+
+    .form-check-input {
+        width: 1.1em;
+        height: 1.1em;
+        cursor: pointer;
+    }
+
+    .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .table tbody tr.selected {
+        background-color: rgba(13, 110, 253, 0.1) !important;
+    }
+
+    @keyframes bounceIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .animate__bounceIn {
+        animation: bounceIn 0.5s ease-out;
+    }
+
+    .btn-sm {
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .btn-sm:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        border: none;
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107, #e0a800);
+        border: none;
+        color: #000;
+    }
+
+    .btn-outline-danger {
+        border-width: 2px;
+    }
+
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .table-hover tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    .card {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    }
+
+    .badge {
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+
+    .modal-content {
+        border-radius: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .bulk-actions .btn-group {
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .bulk-actions .btn {
+            margin: 2px;
+        }
+        
+        .table td, .table th {
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .card-header .card-title {
+            font-size: 1.25rem;
+        }
+    }
 </style>
 {% endblock %}

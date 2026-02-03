@@ -67,13 +67,11 @@
           {% if request.path == '/' %}
             <a href="#home" class="nav-link active">Home</a>
             <a href="#how-it-works" class="nav-link">How It Works</a>
-            <a href="#prizes" class="nav-link">Prizes</a>
             <a href="#about" class="nav-link">About</a>
             <a href="#contact" class="nav-link">Contact</a>
           {% else %}
             <a href="{% url 'core:home' %}" class="nav-link">Home</a>
             <a href="{% url 'core:home' %}#how-it-works" class="nav-link">How It Works</a>
-            <a href="{% url 'core:home' %}#prizes" class="nav-link">Prizes</a>
             <a href="{% url 'core:home' %}#about" class="nav-link">About</a>
             <a href="{% url 'core:home' %}#contact" class="nav-link">Contact</a>
           {% endif %}
@@ -91,6 +89,7 @@
               <div class="dropdown-menu">
                 <a href="{% url 'user:my_profile' %}" class="dropdown-item"><i class="fas fa-user me-2"></i>My Profile</a>
                 <a href="{% url 'user:my_essays' %}" class="dropdown-item"><i class="fas fa-edit me-2"></i>My Essays</a>
+                <a href="{% url 'competition:leaderboard' %}" class="dropdown-item"><i class="fas fa-trophy me-2"></i>Leaderboards</a>
                 <div class="dropdown-divider"></div>
                 <a href="{% url 'user:logout' %}" class="dropdown-item"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
               </div>
@@ -111,21 +110,22 @@
       <nav class="nav-mobile" id="mobileNav">
         {% if request.path == '/' %}
           <a href="#home" class="nav-link">Home</a>
-          <a href="#how-it-works" class="nav-link">How It Works</a>
-          <a href="#prizes" class="nav-link">Prizes</a>
+            <a href="#how-it-works" class="nav-link">How It Works</a>
           <a href="#about" class="nav-link">About</a>
           <a href="#contact" class="nav-link">Contact</a>
         {% else %}
           <a href="{% url 'core:home' %}" class="nav-link">Home</a>
           <a href="{% url 'core:home' %}#how-it-works" class="nav-link">How It Works</a>
-          <a href="{% url 'core:home' %}#prizes" class="nav-link">Prizes</a>
           <a href="{% url 'core:home' %}#about" class="nav-link">About</a>
           <a href="{% url 'core:home' %}#contact" class="nav-link">Contact</a>
         {% endif %}
+        
         <div class="mobile-actions">
           {% if user.is_authenticated %}
             <a href="{% url 'user:my_profile' %}" class="btn btn-ghost">My Profile</a>
             <a href="{% url 'user:my_essays' %}" class="btn btn-ghost">My Essays</a>
+            <!-- Add Leaderboards to mobile actions -->
+            <a href="{% url 'competition:leaderboard' %}" class="btn btn-ghost">Leaderboards</a>
             <a href="{% url 'user:logout' %}" class="btn btn-gold">Logout</a>
           {% else %}
             <a href="{% url 'user:login' %}" class="btn btn-ghost">Login</a>
@@ -177,6 +177,8 @@
             <li><a href="#how-it-works">How It Works</a></li>
             <li><a href="#competitions">Competitions</a></li>
             <li><a href="#prizes">Prizes</a></li>
+            <!-- Add Leaderboards to footer links -->
+            <li><a href="{% url 'competition:leaderboard' %}">Leaderboards</a></li>
           </ul>
         </div>
 

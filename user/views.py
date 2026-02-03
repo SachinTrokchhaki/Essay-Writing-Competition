@@ -103,6 +103,12 @@ def my_profile(request):
         except:
             active_competitions = []
         
+        # Get competitions where user has accepted essays for leaderboards
+        user_competitions_with_leaderboards = EssayCompetition.objects.filter(
+            essay__user=user,
+            essay__status='accepted'
+        ).distinct()
+        
     except Exception as e:
         # If models don't exist yet, use defaults
         total_submissions = 0
@@ -114,6 +120,7 @@ def my_profile(request):
         success_rate = 0
         recent_essays = []
         active_competitions = []
+        user_competitions_with_leaderboards = []
     
     context = {
         'user': user,
@@ -127,6 +134,7 @@ def my_profile(request):
         'success_rate': success_rate,
         'recent_essays': recent_essays,
         'active_competitions': active_competitions,
+        'user_competitions_with_leaderboards': user_competitions_with_leaderboards,  # Add this
     }
     
     return render(request, 'user/profile.html', context)
@@ -164,11 +172,15 @@ def my_essays(request):
         rejected_essays = all_essays.filter(status='rejected').order_by('-updated_at')
         saved_drafts = all_essays.filter(status='draft').order_by('-updated_at')
         
+        # Count accepted essays for notification
+        accepted_essays_count = all_essays.filter(status='accepted').count()
+        
         context = {
             'submitted_essays': submitted_essays,
             'rejected_essays': rejected_essays,
             'saved_drafts': saved_drafts,
             'total_count': all_essays.count(),
+            'accepted_essays_count': accepted_essays_count,  # Add this
         }
     except Exception as e:
         print(f"Error in my_essays: {e}")
@@ -177,6 +189,7 @@ def my_essays(request):
             'rejected_essays': [],
             'saved_drafts': [],
             'total_count': 0,
+            'accepted_essays_count': 0,  # Add this
         }
     
     return render(request, 'user/my_essays.html', context)

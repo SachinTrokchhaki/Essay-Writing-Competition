@@ -1,43 +1,53 @@
-# competition/admin.py
 from django.contrib import admin
-from .models import EssayCompetition, Essay
-from django.utils import timezone
 from django.utils.html import format_html
+from django.utils import timezone
+from .models import EssayCompetition, Essay
+from .evaluator import EssayEvaluator
 
 @admin.register(EssayCompetition)
 class EssayCompetitionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'deadline', 'is_active', 'is_featured', 'days_left_display')
-    list_filter = ('is_active', 'is_featured')
+    list_display = ('title', 'deadline', 'is_active', 'submission_count')
+    list_filter = ('is_active',)
     search_fields = ('title', 'description')
-    ordering = ('-created_at',)
     
-    def days_left_display(self, obj):
-        days = obj.days_left()
-        if days > 0:
-            return f"{days} days left"
-        elif days == 0:
-            return "Ends today"
-        else:
-            return "Closed"
-    days_left_display.short_description = 'Status'
+    def submission_count(self, obj):
+        return obj.essay_set.count()
+    submission_count.short_description = 'Submissions'
 
 @admin.register(Essay)
 class EssayAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'competition', 'status_display', 'submitted_at_display', 'reviewed_by_display', 'word_count')
-    list_filter = ('status', 'competition', 'language', 'submitted_at')
-    search_fields = ('title', 'content', 'user__username', 'user__email')
-    readonly_fields = ('created_at', 'updated_at', 'submitted_at')
-    list_per_page = 20
-    actions = ['mark_as_accepted', 'mark_as_rejected']
+    list_display = ('title', 'user', 'competition', 'status_display', 
+                   'total_score', 'evaluated_at_display', 'word_count')
+    list_filter = ('status', 'competition')
+    search_fields = ('title', 'content', 'user__username')
+    readonly_fields = ('created_at', 'updated_at', 'submitted_at', 'evaluated_at')
+    actions = ['accept_and_evaluate', 'mark_as_rejected']  # This is a LIST
+    
+    fieldsets = (
+        ('Essay Information', {
+            'fields': ('competition', 'user', 'title', 'content', 'status')
+        }),
+        ('Evaluation Scores', {
+            'fields': ('topic_score', 'cohesion_score', 'grammar_score', 
+                      'structure_score', 'total_score', 'evaluated_at')
+        }),
+        ('Administration', {
+            'fields': ('reviewed_by', 'admin_notes', 'submitted_at')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
     
     def status_display(self, obj):
-        status_colors = {
-            'pending_review': 'warning',
+        colors = {
+            'draft': 'secondary',
+            'submitted': 'info',
             'accepted': 'success',
             'rejected': 'danger',
         }
-        
-        color = status_colors.get(obj.status, 'secondary')
+        color = colors.get(obj.status, 'secondary')
         return format_html(
             '<span class="badge bg-{}">{}</span>',
             color,
@@ -45,58 +55,59 @@ class EssayAdmin(admin.ModelAdmin):
         )
     status_display.short_description = 'Status'
     
-    def submitted_at_display(self, obj):
-        if obj.submitted_at:
-            return obj.submitted_at.strftime('%Y-%m-%d %H:%M')
+    def evaluated_at_display(self, obj):
+        if obj.evaluated_at:
+            return obj.evaluated_at.strftime('%Y-%m-%d %H:%M')
         return "-"
-    submitted_at_display.short_description = 'Submitted'
+    evaluated_at_display.short_description = 'Evaluated'
     
-    def reviewed_by_display(self, obj):
-        if obj.reviewed_by:
-            # Use get_full_name() if it exists, otherwise use get_username()
-            try:
-                # Try to get full name
-                full_name = obj.reviewed_by.get_full_name()
-                if full_name and full_name.strip():
-                    return full_name
-            except (AttributeError, TypeError):
-                pass
-            
-            # Fall back to username
-            return obj.reviewed_by.get_username()
-        return "-"
-    reviewed_by_display.short_description = 'Reviewed By'
+    def accept_and_evaluate(self, request, queryset):
+        """Admin action to accept essays and run evaluation"""
+        updated_count = 0
+        
+        for essay in queryset:
+            if essay.status == 'submitted':
+                # Initialize evaluator
+                evaluator = EssayEvaluator(
+                    competition_topic=essay.competition.topic,
+                    min_words=essay.competition.min_words,
+                    max_words=essay.competition.max_words
+                )
+                
+                # Run evaluation
+                scores = evaluator.evaluate(essay.title, essay.content)
+                
+                # Update essay with scores
+                essay.topic_score = scores['topic_score']
+                essay.cohesion_score = scores['cohesion_score']
+                essay.grammar_score = scores['grammar_score']
+                essay.structure_score = scores['structure_score']
+                essay.total_score = scores['total_score']
+                
+                # Update status
+                essay.status = 'accepted'
+                essay.reviewed_by = request.user
+                essay.evaluated_at = timezone.now()
+                essay.save()
+                
+                updated_count += 1
+        
+        if updated_count:
+            self.message_user(
+                request, 
+                f"Successfully accepted and evaluated {updated_count} essay(s)"
+            )
+        else:
+            self.message_user(request, "No essays were in 'submitted' status")
     
-    def mark_as_accepted(self, request, queryset):
-        updated = queryset.filter(status='pending_review').update(
-            status='accepted',
-            reviewed_by=request.user
-        )
-        self.message_user(request, f"{updated} essays accepted.")
-    mark_as_accepted.short_description = "Mark selected as Accepted"
+    accept_and_evaluate.short_description = "Accept and evaluate selected essays"
     
     def mark_as_rejected(self, request, queryset):
-        updated = queryset.filter(status='pending_review').update(
+        """Simple rejection action"""
+        updated = queryset.update(
             status='rejected',
             reviewed_by=request.user
         )
-        self.message_user(request, f"{updated} essays rejected.")
-    mark_as_rejected.short_description = "Mark selected as Rejected"
+        self.message_user(request, f"Marked {updated} essay(s) as rejected")
     
-    fieldsets = (
-        ('Essay Information', {
-            'fields': ('competition', 'user', 'title', 'content', 'html_content', 'language')
-        }),
-        ('Status Information', {
-            'fields': ('status', 'submitted_at', 'reviewed_by', 'admin_notes')
-        }),
-        ('Scoring Information', {
-            'fields': ('word_count', 'character_count', 'grammar_score', 'plagiarism_score', 
-                      'originality_score', 'total_score'),
-            'classes': ('collapse',)
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
+    mark_as_rejected.short_description = "Mark as rejected"
