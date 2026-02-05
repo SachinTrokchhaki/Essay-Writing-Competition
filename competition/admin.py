@@ -18,7 +18,7 @@ class EssayCompetitionAdmin(admin.ModelAdmin):
 @admin.register(Essay)
 class EssayAdmin(admin.ModelAdmin):
     list_display = ('title', 'user', 'competition', 'status_display', 
-                   'total_score', 'evaluated_at_display', 'stored_word_count')  # Changed to stored_word_count
+                   'total_score', 'evaluated_at_display', 'stored_word_count')
     list_filter = ('status', 'competition')
     search_fields = ('title', 'content', 'user__username')
     readonly_fields = ('created_at', 'updated_at', 'submitted_at', 'evaluated_at')
@@ -26,7 +26,7 @@ class EssayAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Essay Information', {
-            'fields': ('competition', 'user', 'title', 'content', 'status')
+            'fields': ('competition', 'user', 'title', 'content', 'html_content', 'language', 'status')
         }),
         ('Evaluation Scores', {
             'fields': ('title_relevance_score', 'cohesion_score', 'grammar_score', 
@@ -68,29 +68,38 @@ class EssayAdmin(admin.ModelAdmin):
         
         for essay in queryset:
             if essay.status == 'submitted':
-                # Initialize evaluator
-                evaluator = EssayEvaluator(
-                    min_words=essay.competition.min_words,
-                    max_words=essay.competition.max_words
-                )
-                
-                # Run evaluation
-                scores = evaluator.evaluate(essay.title, essay.content)
-                
-                # Update essay with scores
-                essay.title_relevance_score = scores['title_relevance_score']
-                essay.cohesion_score = scores['cohesion_score']
-                essay.grammar_score = scores['grammar_score']
-                essay.structure_score = scores['structure_score']
-                essay.total_score = scores['total_score']
-                
-                # Update status
-                essay.status = 'accepted'
-                essay.reviewed_by = request.user
-                essay.evaluated_at = timezone.now()
-                essay.save()
-                
-                updated_count += 1
+                try:
+                    # Initialize evaluator
+                    evaluator = EssayEvaluator(
+                        min_words=essay.competition.min_words,
+                        max_words=essay.competition.max_words
+                    )
+                    
+                    # Run evaluation ONLY if scores are 0.0 (not evaluated yet)
+                    if essay.total_score == 0.0:
+                        scores = evaluator.evaluate(essay.title, essay.content)
+                        
+                        # Update essay with scores
+                        essay.title_relevance_score = scores['title_relevance_score']
+                        essay.cohesion_score = scores['cohesion_score']
+                        essay.grammar_score = scores['grammar_score']
+                        essay.structure_score = scores['structure_score']
+                        essay.total_score = scores['total_score']
+                    
+                    # Update status
+                    essay.status = 'accepted'
+                    essay.reviewed_by = request.user
+                    essay.evaluated_at = timezone.now()
+                    essay.save()
+                    
+                    updated_count += 1
+                    
+                except Exception as e:
+                    self.message_user(
+                        request, 
+                        f"Error evaluating essay '{essay.title}': {str(e)}", 
+                        level='error'
+                    )
         
         if updated_count:
             self.message_user(

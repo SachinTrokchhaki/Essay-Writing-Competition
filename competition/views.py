@@ -9,6 +9,8 @@ from django.contrib import messages
 import json
 from datetime import date
 from django.db import models 
+from django.http import HttpResponse
+from .reports import generate_essay_pdf, generate_competition_report
 
 from .models import EssayCompetition, Essay
 from .evaluator import EssayEvaluator
@@ -487,3 +489,44 @@ def essay_result_detail(request, pk):
         'page_title': f'Results: {essay.title}'
     }
     return render(request, 'competition/essay_result_detail.html', context)
+
+
+
+@staff_member_required
+def download_essay_pdf(request, pk):
+    """Download PDF report for a single essay"""
+    try:
+        pdf_content = generate_essay_pdf(pk)
+        
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="essay_report_{pk}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error generating PDF: {str(e)}")
+        return redirect('admin:competition_essay_changelist')
+
+@staff_member_required  
+def download_competition_pdf(request, pk):
+    """Download PDF report for entire competition"""
+    try:
+        pdf_content = generate_competition_report(pk)
+        
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="competition_report_{pk}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error generating PDF: {str(e)}")
+        return redirect('admin:competition_essaycompetition_changelist')
+
+@staff_member_required
+def view_essay_report(request, pk):
+    """View essay report in browser"""
+    try:
+        pdf_content = generate_essay_pdf(pk)
+        
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="essay_report_{pk}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error generating PDF: {str(e)}")
+        return redirect('admin:competition_essay_changelist')
