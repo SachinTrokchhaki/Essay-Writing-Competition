@@ -1,3 +1,4 @@
+# competition/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
@@ -83,8 +84,6 @@ def save_draft(request):
         if not is_valid:
             return JsonResponse({'success': False, 'error': message})
         
-        word_count = len(content.strip().split())
-        
         # Check if user already has a non-draft submission
         existing_submission = check_essay_submission(request.user, competition)
         if existing_submission:
@@ -124,10 +123,8 @@ def save_draft(request):
             draft.content = content
             draft.html_content = html_content
             draft.language = language
-            draft.word_count = word_count
-            draft.character_count = len(content)
             draft.updated_at = timezone.now()
-            draft.save()
+            draft.save()  # Word count will be auto-updated in save() method
         else:
             # Create new draft
             draft = Essay.objects.create(
@@ -137,8 +134,6 @@ def save_draft(request):
                 content=content,
                 html_content=html_content,
                 language=language,
-                word_count=word_count,
-                character_count=len(content),
                 status='draft'
             )
         
@@ -180,8 +175,6 @@ def submit_final_essay(request):
         is_valid, message = validate_essay_content(content, competition)
         if not is_valid:
             return JsonResponse({'success': False, 'error': message})
-        
-        word_count = len(content.strip().split())
 
         # Check if user already submitted
         existing_submission = check_essay_submission(request.user, competition)
@@ -217,12 +210,10 @@ def submit_final_essay(request):
             essay.content = content
             essay.html_content = html_content
             essay.language = language
-            essay.word_count = word_count
-            essay.character_count = len(content)
             essay.status = 'submitted'
             essay.submitted_at = timezone.now()
             essay.updated_at = timezone.now()
-            essay.save()
+            essay.save()  # Word count will be auto-updated
             
             # Delete other drafts
             Essay.objects.filter(
@@ -239,8 +230,6 @@ def submit_final_essay(request):
                 content=content,
                 html_content=html_content,
                 language=language,
-                word_count=word_count,
-                character_count=len(content),
                 status='submitted',
                 submitted_at=timezone.now()
             )
@@ -270,7 +259,7 @@ def get_draft(request, pk):
                 'content': essay.content,
                 'html_content': essay.html_content,
                 'language': essay.language,
-                'word_count': essay.word_count,
+                'word_count': essay.word_count,  # Uses property
                 'created_at': essay.created_at.isoformat(),
                 'updated_at': essay.updated_at.isoformat(),
                 'status': essay.status,
@@ -286,7 +275,7 @@ def get_draft(request, pk):
             'content': essay.content,
             'html_content': essay.html_content,
             'language': essay.language,
-            'word_count': essay.word_count,
+            'word_count': essay.word_count,  # Uses property
             'created_at': essay.created_at.isoformat(),
             'updated_at': essay.updated_at.isoformat(),
             'status': essay.status,
@@ -328,7 +317,7 @@ def get_draft_content(request, pk):
             'title': essay.title,
             'content': content,
             'language': essay.language,
-            'word_count': essay.word_count,
+            'word_count': essay.word_count,  # Uses property
             'status': essay.status,
             'is_draft': essay.status == 'draft'
         }
@@ -343,7 +332,6 @@ def evaluate_essay(request, pk):
     if request.method == 'POST' and essay.status == 'submitted':
         # Initialize evaluator
         evaluator = EssayEvaluator(
-            competition_topic=essay.competition.topic,
             min_words=essay.competition.min_words,
             max_words=essay.competition.max_words
         )
@@ -352,7 +340,7 @@ def evaluate_essay(request, pk):
         scores = evaluator.evaluate(essay.title, essay.content)
         
         # Update essay
-        essay.topic_score = scores['topic_score']
+        essay.title_relevance_score = scores['title_relevance_score']
         essay.cohesion_score = scores['cohesion_score']
         essay.grammar_score = scores['grammar_score']
         essay.structure_score = scores['structure_score']
@@ -499,4 +487,3 @@ def essay_result_detail(request, pk):
         'page_title': f'Results: {essay.title}'
     }
     return render(request, 'competition/essay_result_detail.html', context)
-

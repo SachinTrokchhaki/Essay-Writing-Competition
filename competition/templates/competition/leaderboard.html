@@ -160,7 +160,7 @@
                                 {% endif %}
                             </td>
                             <!-- Add decimal formatting for scores -->
-                            <td class="text-center">{{ essay.topic_score|floatformat:1 }}</td>
+                            <td class="text-center">{{ essay.title_relevance_score|floatformat:1 }}</td>
                             <td class="text-center">{{ essay.cohesion_score|floatformat:1 }}</td>
                             <td class="text-center">{{ essay.grammar_score|floatformat:1 }}</td>
                             <td class="text-center">{{ essay.structure_score|floatformat:1 }}</td>

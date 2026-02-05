@@ -1,3 +1,4 @@
+# competition/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils import timezone
@@ -17,18 +18,18 @@ class EssayCompetitionAdmin(admin.ModelAdmin):
 @admin.register(Essay)
 class EssayAdmin(admin.ModelAdmin):
     list_display = ('title', 'user', 'competition', 'status_display', 
-                   'total_score', 'evaluated_at_display', 'word_count')
+                   'total_score', 'evaluated_at_display', 'stored_word_count')  # Changed to stored_word_count
     list_filter = ('status', 'competition')
     search_fields = ('title', 'content', 'user__username')
     readonly_fields = ('created_at', 'updated_at', 'submitted_at', 'evaluated_at')
-    actions = ['accept_and_evaluate', 'mark_as_rejected']  # This is a LIST
+    actions = ['accept_and_evaluate', 'mark_as_rejected']
     
     fieldsets = (
         ('Essay Information', {
             'fields': ('competition', 'user', 'title', 'content', 'status')
         }),
         ('Evaluation Scores', {
-            'fields': ('topic_score', 'cohesion_score', 'grammar_score', 
+            'fields': ('title_relevance_score', 'cohesion_score', 'grammar_score', 
                       'structure_score', 'total_score', 'evaluated_at')
         }),
         ('Administration', {
@@ -69,7 +70,6 @@ class EssayAdmin(admin.ModelAdmin):
             if essay.status == 'submitted':
                 # Initialize evaluator
                 evaluator = EssayEvaluator(
-                    competition_topic=essay.competition.topic,
                     min_words=essay.competition.min_words,
                     max_words=essay.competition.max_words
                 )
@@ -78,7 +78,7 @@ class EssayAdmin(admin.ModelAdmin):
                 scores = evaluator.evaluate(essay.title, essay.content)
                 
                 # Update essay with scores
-                essay.topic_score = scores['topic_score']
+                essay.title_relevance_score = scores['title_relevance_score']
                 essay.cohesion_score = scores['cohesion_score']
                 essay.grammar_score = scores['grammar_score']
                 essay.structure_score = scores['structure_score']

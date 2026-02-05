@@ -50,14 +50,13 @@ NLTK_READY = download_nltk_data()
 class EssayEvaluator:
     """
     Evaluates essays based on:
-    1. Topic Relevance (30%) - Title vs Essay content
+    1. Title-Content Relevance (30%) - How well content matches the title
     2. Cohesion (30%) - Sentence flow using TF-IDF & cosine similarity
     3. Grammar Score (25%) - Using language_tool_python
     4. Structure & Length (15%) - Word count and paragraph structure
     """
     
-    def __init__(self, competition_topic, min_words=500, max_words=2000):
-        self.competition_topic = competition_topic
+    def __init__(self, min_words=250, max_words=500):
         self.min_words = min_words
         self.max_words = max_words
         
@@ -81,10 +80,10 @@ class EssayEvaluator:
         """
         # Calculate individual scores with error handling
         try:
-            topic_score = self._calculate_topic_relevance(essay_title, essay_content)
+            relevance_score = self._calculate_title_relevance(essay_title, essay_content)
         except Exception as e:
-            print(f"Topic relevance calculation error: {e}")
-            topic_score = 50.0
+            print(f"Title relevance calculation error: {e}")
+            relevance_score = 50.0
         
         try:
             cohesion_score = self._calculate_cohesion(essay_content)
@@ -106,7 +105,7 @@ class EssayEvaluator:
         
         # Calculate weighted total (weights as specified)
         total_score = (
-            topic_score * 0.30 +
+            relevance_score * 0.30 +
             cohesion_score * 0.30 +
             grammar_score * 0.25 +
             structure_score * 0.15
@@ -114,7 +113,7 @@ class EssayEvaluator:
         
         # Convert numpy floats to Python floats
         scores = {
-            'topic_score': float(round(topic_score, 2)),
+            'title_relevance_score': float(round(relevance_score, 2)),
             'cohesion_score': float(round(cohesion_score, 2)),
             'grammar_score': float(round(grammar_score, 2)),
             'structure_score': float(round(structure_score, 2)),
@@ -123,68 +122,97 @@ class EssayEvaluator:
         
         return scores
     
-    def _calculate_topic_relevance(self, title, content):
-        """Calculate relevance between title/topic and essay content (0-100)"""
+    def _calculate_title_relevance(self, title, content):
+        """Calculate relevance between essay title and content (0-100)"""
         if not content.strip() or not title.strip():
             return 50.0
         
         try:
             # Convert to lowercase for case-insensitive matching
-            topic_lower = self.competition_topic.lower()
             title_lower = title.lower()
             content_lower = content.lower()
             
-            # Combine topic and title for keyword extraction
-            search_text = f"{topic_lower} {title_lower}"
-            
-            # Extract keywords (remove stopwords and short words)
+            # Extract keywords from title
             if NLTK_READY:
-                search_words = word_tokenize(search_text)
+                title_words = word_tokenize(title_lower)
                 content_words = word_tokenize(content_lower)
             else:
-                search_words = search_text.split()
+                title_words = title_lower.split()
                 content_words = content_lower.split()
             
-            # Get meaningful keywords (words > 3 chars, not stopwords)
-            keywords = []
-            for word in search_words:
+            # Get meaningful keywords from title (words > 3 chars, not stopwords)
+            title_keywords = []
+            for word in title_words:
                 if (word.isalnum() and 
                     len(word) > 3 and 
                     word.lower() not in self.stop_words):
-                    keywords.append(word.lower())
+                    title_keywords.append(word.lower())
+            
+            # Also include important short words (conjunctions, prepositions that matter)
+            important_short_words = {'if', 'but', 'yet', 'so', 'nor', 'for', 'as'}
+            for word in title_words:
+                if word in important_short_words:
+                    title_keywords.append(word.lower())
             
             # Remove duplicates
-            keywords = list(set(keywords))
+            title_keywords = list(set(title_keywords))
             
-            if not keywords:
+            if not title_keywords:
                 return 50.0  # No meaningful keywords found
             
             # Calculate keyword presence in content
             matches = 0
-            for keyword in keywords:
+            for keyword in title_keywords:
                 # Check if keyword appears in content
                 if keyword in content_lower:
                     matches += 1
                 # Also check for partial matches (for compound words)
-                elif len(keyword) > 5:
+                elif len(keyword) > 4:
                     # Check if part of the keyword appears
                     for word in content_words:
                         if len(word) > 3 and (keyword in word or word in keyword):
                             matches += 0.5
                             break
             
+            # Check for title phrases in content
+            title_phrases = self._extract_phrases(title_lower)
+            for phrase in title_phrases:
+                if phrase in content_lower:
+                    matches += 2  # Bonus for matching phrases
+            
             # Calculate percentage score
             if matches > 0:
-                score = (matches / len(keywords)) * 100
-                # Add base score to ensure reasonable minimum
-                score = max(30, min(score, 100))
-                return score
+                score = (matches / max(len(title_keywords), 1)) * 50  # Base 50 points for keywords
+                score = min(score + 30, 100)  # Add base 30 points, cap at 100
+                return max(30, min(score, 100))  # Ensure between 30-100
             else:
                 return 30.0  # Minimum score for any essay
             
         except Exception as e:
-            print(f"Topic relevance error: {e}")
+            print(f"Title relevance error: {e}")
             return 50.0  # Default score on error
+    
+    def _extract_phrases(self, text):
+        """Extract meaningful phrases (2-3 word combinations) from text"""
+        if NLTK_READY:
+            words = word_tokenize(text)
+        else:
+            words = text.split()
+        
+        phrases = []
+        # Generate 2-word phrases
+        for i in range(len(words) - 1):
+            phrase = f"{words[i]} {words[i+1]}"
+            if len(phrase.split()) == 2:
+                phrases.append(phrase.lower())
+        
+        # Generate 3-word phrases if text is long enough
+        for i in range(len(words) - 2):
+            phrase = f"{words[i]} {words[i+1]} {words[i+2]}"
+            if len(phrase.split()) == 3:
+                phrases.append(phrase.lower())
+        
+        return list(set(phrases))
     
     def _calculate_cohesion(self, content):
         """Calculate cohesion using TF-IDF and cosine similarity (0-100)"""

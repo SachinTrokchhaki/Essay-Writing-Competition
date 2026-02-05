@@ -1,3 +1,4 @@
+# competition/models.py
 from django.db import models
 from django.conf import settings
 from django.urls import reverse
@@ -6,7 +7,6 @@ from datetime import date
 class EssayCompetition(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
-    topic = models.TextField(help_text="Main topic/theme for relevance evaluation")
     deadline = models.DateField()
     eligibility = models.CharField(max_length=100)
     prize = models.CharField(max_length=100)
@@ -18,7 +18,7 @@ class EssayCompetition(models.Model):
     max_words = models.IntegerField(default=500)
     
     class Meta:
-        ordering = ['-created_at']  # REMOVED: 'order', '-is_featured'
+        ordering = ['-created_at']
     
     def __str__(self):
         return self.title
@@ -38,12 +38,19 @@ class Essay(models.Model):
         ('rejected', 'Rejected'),
     ]
     
-    competition = models.ForeignKey(EssayCompetition, on_delete=models.CASCADE)
+    # Use string reference since EssayCompetition is now defined above
+    competition = models.ForeignKey('EssayCompetition', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     content = models.TextField()
+    html_content = models.TextField(blank=True)  # For rich text content
+    language = models.CharField(max_length=10, default='en')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Database fields for querying
+    stored_word_count = models.IntegerField(default=0)
+    stored_character_count = models.IntegerField(default=0)
     
     # Status fields
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
@@ -53,7 +60,7 @@ class Essay(models.Model):
     admin_notes = models.TextField(blank=True)
     
     # EVALUATION FIELDS
-    topic_score = models.FloatField(default=0.0)
+    title_relevance_score = models.FloatField(default=0.0)
     cohesion_score = models.FloatField(default=0.0)
     grammar_score = models.FloatField(default=0.0)
     structure_score = models.FloatField(default=0.0)
@@ -65,6 +72,7 @@ class Essay(models.Model):
         ordering = ['-total_score']
         indexes = [
             models.Index(fields=['status', 'total_score']),
+            models.Index(fields=['stored_word_count']),
         ]
     
     def __str__(self):
@@ -72,4 +80,29 @@ class Essay(models.Model):
     
     @property
     def word_count(self):
-        return len(self.content.strip().split())
+        """Calculate word count from content"""
+        if self.content and self.content.strip():
+            return len(self.content.strip().split())
+        return 0
+    
+    @property
+    def character_count(self):
+        """Calculate character count from content"""
+        return len(self.content) if self.content else 0
+    
+    def save(self, *args, **kwargs):
+        """Auto-update stored counts when saving"""
+        # Update stored counts from content
+        self.stored_word_count = self.word_count
+        self.stored_character_count = self.character_count
+        
+        # If this is a final submission, set submitted_at
+        if self.status in ['submitted', 'accepted', 'rejected'] and not self.submitted_at:
+            from django.utils import timezone
+            self.submitted_at = timezone.now()
+            
+        super().save(*args, **kwargs)
+    
+    def get_absolute_url(self):
+        """Get URL for this essay"""
+        return reverse('competition:essay_result', kwargs={'pk': self.pk})

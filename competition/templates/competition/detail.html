@@ -55,9 +55,9 @@
             <div>
               <span class="meta-label">Status:</span>
               <span class="meta-value">
-                {% if competition.days_left > 0 %}
-                  <span class="badge bg-success">{{ competition.days_left }} days left</span>
-                {% elif competition.days_left == 0 %}
+                {% if competition|days_left > 0 %}
+                  <span class="badge bg-success">{{ competition|days_left }} days left</span>
+                {% elif competition|days_left == 0 %}
                   <span class="badge bg-warning">Ends today!</span>
                 {% else %}
                   <span class="badge bg-danger">Closed</span>
@@ -210,9 +210,9 @@
                 <div class="stat-content">
                   <div class="stat-label">Time Remaining</div>
                   <div class="stat-value">
-                    {% if competition.days_left > 0 %}
-                      {{ competition.days_left }} days
-                    {% elif competition.days_left == 0 %}
+                    {% if competition|days_left > 0 %}
+                      {{ competition|days_left }} days
+                    {% elif competition|days_left == 0 %}
                       <span class="text-warning">Today!</span>
                     {% else %}
                       <span class="text-danger">Closed</span>

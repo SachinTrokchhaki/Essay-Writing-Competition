@@ -50,13 +50,20 @@ def can_user_submit(user, competition):
 
 
 def validate_essay_content(content, competition):
-    """Validate essay word count"""
-    word_count = len(content.strip().split())
+    """Validate essay content against competition requirements"""
+    if not content or not content.strip():
+        return False, "Essay content cannot be empty"
     
+    # Calculate word count from content
+    words = content.strip().split()
+    word_count = len(words)
+    
+    # Check minimum words
     if word_count < competition.min_words:
-        return False, f"Minimum {competition.min_words} words required. Currently: {word_count} words"
+        return False, f"Essay must be at least {competition.min_words} words. Current: {word_count}"
     
+    # Check maximum words
     if word_count > competition.max_words:
-        return False, f"Maximum {competition.max_words} words allowed. Currently: {word_count} words"
+        return False, f"Essay must not exceed {competition.max_words} words. Current: {word_count}"
     
-    return True, f"Word count: {word_count} (Valid)"
+    return True, "Valid"

@@ -1,5 +1,9 @@
 <!-- core/templates/core/index.html -->
-{% extends 'core/base.html' %} {% load static %} {% block content %}
+{% extends 'core/base.html' %} 
+{% load static %} 
+{% load competition_tags %}
+
+{% block content %}
 <!-- Hero Section -->
 <section class="hero" id="home">
   <!-- Background decoration -->
@@ -151,21 +155,31 @@
     </div>
 
     <div class="competitions-grid">
-      {% for competition in competitions|dictsort:"order" %}
+      {% for competition in competitions %}
         {% if competition.is_active %}
-          <div class="competition-card {% if competition.is_featured %}competition-card-featured{% endif %}">
+          <div class="competition-card">
             <div class="competition-header">
               <h3 class="competition-title">{{ competition.title }}</h3>
+              
+              <!-- Status Badge -->
               {% if competition.is_open %}
-                {% if competition.days_left <= 7 %}
-                  <span class="badge badge-warning">{{ competition.days_left }} days left</span>
-                {% endif %}
+                {% with competition|days_left as days_left %}
+                  {% if days_left <= 7 and days_left > 0 %}
+                    <span class="badge badge-warning">{{ days_left }} day{{ days_left|pluralize }} left</span>
+                  {% elif days_left == 0 %}
+                    <span class="badge badge-danger">Last day!</span>
+                  {% elif days_left > 7 %}
+                    <span class="badge badge-success">Open</span>
+                  {% endif %}
+                {% endwith %}
               {% else %}
                 <span class="badge badge-closed">CLOSED</span>
               {% endif %}
             </div>
+            
             <div class="competition-body">
               <p class="competition-description">{{ competition.description|truncatewords:30 }}</p>
+              
               <div class="competition-details">
                 <div class="detail-item">
                   <i data-lucide="calendar"></i>
@@ -174,16 +188,19 @@
                     <span class="text-muted ms-2">(Passed)</span>
                   {% endif %}
                 </div>
+                
                 <div class="detail-item">
                   <i data-lucide="users"></i>
                   <span>{{ competition.eligibility }}</span>
                 </div>
+                
                 <div class="detail-item">
                   <i data-lucide="award"></i>
                   <span>Prizes: {{ competition.prize }}</span>
                 </div>
               </div>
             </div>
+            
             <div class="competition-footer">
               <a href="{% url 'competition:detail' competition.pk %}" class="btn btn-outline-primary">
                 <i data-lucide="info"></i>
@@ -194,12 +211,12 @@
                 {% if user.is_authenticated %}
                   <a href="{% url 'competition:submit_essay' competition.pk %}" class="btn btn-primary">
                     <i data-lucide="pen-tool"></i>
-                    {{ competition.button_text }}
+                    Submit Essay
                   </a>
                 {% else %}
-                  <a href="{% url 'user:login' %}?next=/competitions/{{ competition.pk }}/submit/" class="btn btn-primary">
+                  <a href="{% url 'user:login' %}?next={{ request.path }}" class="btn btn-primary">
                     <i data-lucide="pen-tool"></i>
-                    Login to Write
+                    Login to Submit
                   </a>
                 {% endif %}
               {% else %}
@@ -594,6 +611,16 @@
   .badge-warning {
     background-color: #fff3cd;
     color: #856404;
+  }
+  
+  .badge-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .badge-success {
+    background-color: #d1ecf1;
+    color: #0c5460;
   }
   
   .badge-open {

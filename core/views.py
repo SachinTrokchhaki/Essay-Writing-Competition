@@ -5,25 +5,35 @@ from django.contrib import messages
 from competition.models import Essay
 from .forms import FeedbackForm
 from .models import Feedback
+from datetime import date
 
 def home(request):
     """Homepage view with competitions"""
     try:
         # Import inside function to avoid circular imports
         from competition.models import EssayCompetition
+        
+        # Get active competitions - SIMPLIFIED VERSION
         competitions = EssayCompetition.objects.filter(
             is_active=True
-        ).order_by('order', '-is_featured', '-created_at')
+        ).order_by('-created_at')  # Changed to just use -created_at
+        
+        # Debug: Check what we got
+        print(f"DEBUG: Found {competitions.count()} active competitions")
+        
     except Exception as e:
         # If there's any error (model doesn't exist, etc.), show empty list
         competitions = []
         print(f"Debug: Could not load competitions - {e}")
     
     # Get approved feedback for homepage
-    approved_feedback = Feedback.objects.filter(
-        status='approved',
-        show_on_homepage=True
-    ).order_by('-created_at')[:6]
+    try:
+        approved_feedback = Feedback.objects.filter(
+            status='approved',
+            show_on_homepage=True
+        ).order_by('-created_at')[:6]
+    except:
+        approved_feedback = []
     
     # Handle feedback form submission
     if request.method == 'POST' and 'submit_feedback' in request.POST:
@@ -44,6 +54,8 @@ def home(request):
         'competitions': competitions,
         'approved_feedback': approved_feedback,
     }
+    
+    # IMPORTANT: Make sure this line is at the end and not inside any condition
     return render(request, "core/index.html", context)
 
 def terms(request):
