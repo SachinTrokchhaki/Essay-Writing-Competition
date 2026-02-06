@@ -25,16 +25,19 @@
         position: sticky;
         top: 120px;
         z-index: 10;
+        border-bottom: 2px solid #dee2e6;
     }
     
     .table tbody tr.table-info {
         background-color: #e7f4ff !important;
         font-weight: 500;
+        border-left: 4px solid #0d6efd;
     }
     
     /* Badge styling */
     .badge.bg-warning {
         background: linear-gradient(45deg, #ffc107, #ff9800) !important;
+        color: #000 !important;
     }
     
     .badge.bg-secondary {
@@ -48,12 +51,16 @@
     /* Card improvements */
     .card {
         border: 1px solid rgba(0,0,0,.125);
-        box-shadow: 0 2px 4px rgba(0,0,0,.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
         margin-bottom: 1.5rem;
+        border-radius: 10px;
+        overflow: hidden;
     }
     
     .card-header {
         font-weight: 600;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0,0,0,.125);
     }
     
     /* Competition info card */
@@ -65,6 +72,53 @@
     td.text-center {
         font-family: 'Courier New', monospace;
         font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    /* Make total score stand out more */
+    td.text-center strong.text-primary {
+        font-size: 1.1rem;
+    }
+    
+    /* Competition title styling */
+    .competition-title {
+        color: #2c3e50;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Prize styling */
+    .prize-badge {
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        color: #000;
+        font-weight: bold;
+        padding: 5px 15px;
+        border-radius: 20px;
+        display: inline-block;
+        margin: 2px;
+    }
+    
+    /* Responsive table */
+    @media (max-width: 768px) {
+        .table-responsive {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .table th, .table td {
+            padding: 0.75rem;
+            font-size: 0.9rem;
+        }
+        
+        .badge.fs-6 {
+            font-size: 0.8rem !important;
+            padding: 4px 8px !important;
+        }
+        
+        /* Hide evaluated on mobile if needed */
+        .evaluated-column {
+            min-width: 100px;
+        }
     }
 </style>
 {% endblock %}
@@ -78,10 +132,12 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="mb-0">{{ page_title }}</h1>
+                <h1 class="mb-0 competition-title">
+                    <i class="fas fa-trophy text-warning me-2"></i>
+                    {{ page_title }}
+                </h1>
                 <div>
-                    <!-- TEMPORARY FIX: Use direct URL instead of Django URL tag -->
-                    <a href="/competition/" class="btn btn-outline-primary me-2">
+                    <a href="{% url 'competition:leaderboard' %}" class="btn btn-outline-primary me-2">
                         <i class="fas fa-list me-1"></i>
                         All Competitions
                     </a>
@@ -94,104 +150,190 @@
             
             <!-- Competition Info Card -->
             <div class="card mb-4 competition-info-card">
-                <div class="card-body">
-                    <h5 class="card-title mb-3">{{ competition.title }}</h5>
-                    <p class="card-text text-muted">{{ competition.description|truncatewords:30 }}</p>
+                <div class="card-body p-4">
+                    <h2 class="card-title mb-3">{{ competition.title }}</h2>
+                    <p class="card-text text-muted mb-4">{{ competition.description }}</p>
                     <div class="row">
                         <div class="col-md-6">
-                            <p class="mb-2">
-                                <i class="fas fa-calendar me-2 text-primary"></i>
-                                <strong>Deadline:</strong> {{ competition.deadline|date:"F d, Y" }}
-                            </p>
-                            <p class="mb-2">
-                                <i class="fas fa-users me-2 text-primary"></i>
-                                <strong>Eligibility:</strong> {{ competition.eligibility }}
-                            </p>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0"><strong>Deadline</strong></p>
+                                    <p class="mb-0 text-muted">{{ competition.deadline|date:"F d, Y" }}</p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0"><strong>Eligibility</strong></p>
+                                    <p class="mb-0 text-muted">{{ competition.eligibility }}</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <p class="mb-2">
-                                <i class="fas fa-award me-2 text-warning"></i>
-                                <strong>Prize:</strong> {{ competition.prize }}
-                            </p>
-                            <p class="mb-2">
-                                <i class="fas fa-file-text me-2 text-primary"></i>
-                                <strong>Participants:</strong> {{ essays|length }}
-                            </p>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-award"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0"><strong>Prize Pool</strong></p>
+                                    <p class="mb-0 text-muted">{{ competition.prize }}</p>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <i class="fas fa-file-text"></i>
+                                </div>
+                                <div>
+                                    <p class="mb-0"><strong>Participants</strong></p>
+                                    <p class="mb-0 text-muted">{{ essays|length }} participants</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
             {% if essays %}
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="table-dark">
-                        <tr>
-                            <th style="width: 70px;">Rank</th>
-                            <th>Participant</th>
-                            <th>Essay Title</th>
-                            <th>Topic</th>
-                            <th>Cohesion</th>
-                            <th>Grammar</th>
-                            <th>Structure</th>
-                            <th><strong>Total</strong></th>
-                            <th>Evaluated On</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for essay in essays %}
-                        <tr {% if essay.user == request.user %}class="table-info"{% endif %}>
-                            <td class="text-center">
-                                <span class="badge {% if essay.rank == 1 %}bg-warning{% elif essay.rank == 2 %}bg-secondary{% elif essay.rank == 3 %}bg-danger{% else %}bg-light text-dark border{% endif %} fs-6 py-2 px-3">
-                                    {{ essay.rank }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if essay.user == request.user %}
-                                <strong class="text-primary">You</strong>
-                                {% else %}
-                                {{ essay.user.get_full_name|default:essay.user.username }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                <strong>{{ essay.title }}</strong>
-                                {% if essay.user == request.user %}
-                                <span class="badge bg-info ms-2">Your Essay</span>
-                                {% endif %}
-                            </td>
-                            <!-- Add decimal formatting for scores -->
-                            <td class="text-center">{{ essay.title_relevance_score|floatformat:1 }}</td>
-                            <td class="text-center">{{ essay.cohesion_score|floatformat:1 }}</td>
-                            <td class="text-center">{{ essay.grammar_score|floatformat:1 }}</td>
-                            <td class="text-center">{{ essay.structure_score|floatformat:1 }}</td>
-                            <td class="text-center"><strong class="text-primary">{{ essay.total_score|floatformat:1 }}</strong></td>
-                            <td class="text-muted">{{ essay.evaluated_at|date:"M d, Y" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Leaderboard
+                    <span class="badge bg-light text-dark ms-2">{{ essays|length }} participants</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 80px;" class="text-center">Rank</th>
+                                    <th>Participant</th>
+                                    <th>Essay Title</th>
+                                    <th class="text-center">Topic</th>
+                                    <th class="text-center">Cohesion</th>
+                                    <th class="text-center">Grammar</th>
+                                    <th class="text-center">Structure</th>
+                                    <th class="text-center"><strong>Total</strong></th>
+                                    <th class="text-center evaluated-column">Evaluated On</th> <!-- ADDED THIS -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for essay in essays %}
+                                <tr {% if essay.user == request.user %}class="table-info"{% endif %}>
+                                    <td class="text-center align-middle">
+                                        <span class="badge {% if essay.rank == 1 %}bg-warning{% elif essay.rank == 2 %}bg-secondary{% elif essay.rank == 3 %}bg-danger{% else %}bg-light text-dark border{% endif %} fs-6 py-2 px-3">
+                                            #{{ essay.rank }}
+                                        </span>
+                                    </td>
+                                    <td class="align-middle">
+                                        {% if essay.user == request.user %}
+                                        <strong class="text-primary">
+                                            <i class="fas fa-user me-1"></i>
+                                            You
+                                        </strong>
+                                        {% else %}
+                                        {{ essay.user.get_full_name|default:essay.user.username }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="align-middle">
+                                        <strong>{{ essay.title }}</strong>
+                                        {% if essay.user == request.user %}
+                                        <span class="badge bg-info ms-2">Your Essay</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center align-middle">{{ essay.title_relevance_score|floatformat:1 }}</td>
+                                    <td class="text-center align-middle">{{ essay.cohesion_score|floatformat:1 }}</td>
+                                    <td class="text-center align-middle">{{ essay.grammar_score|floatformat:1 }}</td>
+                                    <td class="text-center align-middle">{{ essay.structure_score|floatformat:1 }}</td>
+                                    <td class="text-center align-middle">
+                                        <strong class="text-primary" style="font-size: 1.1rem;">
+                                            {{ essay.total_score|floatformat:1 }}
+                                        </strong>
+                                    </td>
+                                    <td class="text-center align-middle evaluated-column">
+                                        {% if essay.evaluated_at %}
+                                            {{ essay.evaluated_at|date:"Y-m-d" }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             
             <!-- User's position if not in top list -->
             {% if user.is_authenticated %}
                 {% for essay in essays %}
                     {% if essay.user == user %}
-                        <div class="card mt-4 border-info">
-                            <div class="card-header bg-info text-white">
-                                <i class="fas fa-user me-2"></i>
-                                Your Position in This Competition
+                        <div class="card mt-4 border-primary">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-user-graduate me-2"></i>
+                                    Your Competition Performance
+                                </div>
+                                <span class="badge bg-warning text-dark fs-6">Rank #{{ essay.rank }}</span>
                             </div>
                             <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h5 class="mb-1">{{ essay.title }}</h5>
-                                        <p class="text-muted mb-0">
-                                            Rank: <strong>#{{ essay.rank }}</strong> out of {{ essays|length }} participants
-                                        </p>
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h5 class="card-title">{{ essay.title }}</h5>
+                                        <div class="row mt-3">
+                                            <div class="col-6 col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="fw-bold text-primary">{{ essay.title_relevance_score|floatformat:1 }}</div>
+                                                    <small class="text-muted">Topic</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="fw-bold text-primary">{{ essay.cohesion_score|floatformat:1 }}</div>
+                                                    <small class="text-muted">Cohesion</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="fw-bold text-primary">{{ essay.grammar_score|floatformat:1 }}</div>
+                                                    <small class="text-muted">Grammar</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <div class="text-center p-2 border rounded">
+                                                    <div class="fw-bold text-primary">{{ essay.structure_score|floatformat:1 }}</div>
+                                                    <small class="text-muted">Structure</small>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="text-end">
-                                        <div class="display-6 text-primary fw-bold">{{ essay.total_score|floatformat:1 }}</div>
-                                        <small class="text-muted">Total Score</small>
+                                    <!-- Add this before the table for debugging -->
+                                     <div class="alert alert-info d-none"> <!-- Add d-none to hide it later -->
+                                        <h5>Debug Information:</h5>
+                                        {% for essay in essays %}
+                                        <p>
+                                            Essay: {{ essay.title }}<br>
+                                            Evaluated At: {{ essay.evaluated_at }}<br>
+                                            Status: {{ essay.status }}<br>
+                                            Has evaluated_at: {{ essay.evaluated_at|yesno:"Yes,No" }}
+                                        </p>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="display-4 fw-bold text-primary">{{ essay.total_score|floatformat:1 }}</div>
+                                        <p class="text-muted mb-0">Overall Score</p>
+                                        <p class="small text-muted">Out of {{ essays|length }} participants</p>
+                                        {% if essay.evaluated_at %}
+                                            <p class="small text-muted mt-2">
+                                                <i class="fas fa-calendar-check me-1"></i>
+                                                Evaluated: {{ essay.evaluated_at|date:"Y-m-d" }}
+                                            </p>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -202,9 +344,13 @@
             
             {% else %}
             <div class="alert alert-info text-center py-5">
-                <i class="fas fa-info-circle fa-2x mb-3"></i>
-                <h5>No Evaluated Essays Yet</h5>
-                <p class="mb-0">No essays have been evaluated for this competition yet. Check back later!</p>
+                <i class="fas fa-info-circle fa-3x mb-3 text-info"></i>
+                <h4>No Evaluated Essays Yet</h4>
+                <p class="mb-3">No essays have been evaluated for this competition yet. Check back later!</p>
+                <a href="{% url 'competition:detail' competition.pk %}" class="btn btn-info">
+                    <i class="fas fa-pen-alt me-1"></i>
+                    Submit Your Essay
+                </a>
             </div>
             {% endif %}
         </div>

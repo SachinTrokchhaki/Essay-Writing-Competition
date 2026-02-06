@@ -119,7 +119,7 @@ class EssayEvaluator:
             'structure_score': float(round(structure_score, 2)),
             'total_score': float(round(total_score, 2))
         }
-        
+            
         return scores
     
     def _calculate_title_relevance(self, title, content):

@@ -404,7 +404,7 @@ def leaderboard(request, pk=None):
         competitions = EssayCompetition.objects.filter(
             is_active=True
         ).annotate(
-            accepted_count=models.Count('essay', filter=models.Q(essay__status='accepted'))
+            accepted_count=models.Count('essays', filter=models.Q(essays__status='accepted'))
         ).filter(accepted_count__gt=0).order_by('-created_at')
         
         return render(request, 'competition/competition_list.html', {

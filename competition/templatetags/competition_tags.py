@@ -60,13 +60,13 @@ def days_left(competition):
 @register.filter
 def has_accepted_essays(competition):
     """Check if competition has any accepted essays"""
-    return competition.essay_set.filter(status='accepted').exists()
+    return competition.essays.filter(status='accepted').exists()
 
 
 @register.filter
 def get_top_essays(competition, count=5):
     """Get top N essays for a competition"""
-    return competition.essay_set.filter(
+    return competition.essays.filter(
         status='accepted'
     ).order_by('-total_score')[:count]
 
