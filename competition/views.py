@@ -609,3 +609,4 @@ def view_essay_report(request, pk):
     except Exception as e:
         messages.error(request, f"Error generating PDF: {str(e)}")
         return redirect('admin:competition_essay_changelist')
+    

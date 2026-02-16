@@ -270,3 +270,4 @@ class Essay(models.Model):
             'lowest_score': round(stats['min_score'] or 0, 2),
             'average_word_count': round(stats['avg_words'] or 0, 0),
         }
+

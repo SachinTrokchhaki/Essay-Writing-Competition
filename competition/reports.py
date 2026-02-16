@@ -267,3 +267,4 @@ def generate_competition_report(competition_id):
     buffer.close()
     
     return pdf
+

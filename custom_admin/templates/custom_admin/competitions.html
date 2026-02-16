@@ -1,0 +1,80 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Manage Competitions{% endblock %}
+
+{% block content %}
+<!-- Add Competition Button -->
+<div class="mb-3">
+    <a href="{% url 'admin:competition_essaycompetition_add' %}" target="_blank" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Competition
+    </a>
+</div>
+
+<!-- Competitions List -->
+<div class="table-container">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Deadline</th>
+                <th>Status</th>
+                <th>Submissions</th>
+                <th>Accepted</th>
+                <th>Avg Score</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for competition in competitions %}
+            <tr>
+                <td>
+                    <strong>{{ competition.title }}</strong><br>
+                    <small class="text-muted">{{ competition.description|truncatechars:50 }}</small>
+                </td>
+                <td>
+                    {{ competition.deadline|date:"M d, Y" }}<br>
+                    <small class="text-muted">{{ competition.deadline|timeuntil }} left</small>
+                </td>
+                <td>
+                    {% if competition.deadline < now %}
+                        <span class="badge badge-danger">Expired</span>
+                    {% elif competition.is_active %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-info">{{ competition.essay_count }}</span>
+                </td>
+                <td>
+                    <span class="badge badge-success">{{ competition.accepted_count }}</span>
+                </td>
+                <td>
+                    {% if competition.avg_score %}
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar bg-success" style="width: {{ competition.avg_score }}%"></div>
+                        </div>
+                        <small>{{ competition.avg_score|floatformat:1 }}%</small>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'admin:competition_essaycompetition_change' competition.id %}" target="_blank" class="action-btn" style="background: #28a745; color: white;">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'custom_admin:essays' %}?competition={{ competition.id }}" class="action-btn" style="background: #007bff; color: white;">
+                        <i class="fas fa-eye"></i> View Essays
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center">No competitions found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

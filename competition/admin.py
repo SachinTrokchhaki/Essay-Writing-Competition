@@ -144,3 +144,4 @@ class EssayAdmin(admin.ModelAdmin):
         self.message_user(request, f"Marked {len(queryset)} essay(s) as rejected")
     
     mark_as_rejected.short_description = "Mark as rejected"
+

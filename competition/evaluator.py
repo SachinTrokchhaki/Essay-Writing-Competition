@@ -376,3 +376,4 @@ class EssayEvaluator:
         except Exception as e:
             print(f"Structure calculation error: {e}")
             return 50.0
+

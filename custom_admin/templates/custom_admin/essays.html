@@ -1,0 +1,137 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Manage Essays{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="table-container mb-3">
+    <form method="get" class="row g-3">
+        <div class="col-md-3">
+            <label>Status</label>
+            <select name="status" class="form-control">
+                <option value="">All</option>
+                <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="submitted" {% if request.GET.status == 'submitted' %}selected{% endif %}>Submitted</option>
+                <option value="accepted" {% if request.GET.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>Competition</label>
+            <select name="competition" class="form-control">
+                <option value="">All</option>
+                {% for comp in competitions %}
+                <option value="{{ comp.id }}" {% if request.GET.competition == comp.id|stringformat:"i" %}selected{% endif %}>
+                    {{ comp.title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label>Search</label>
+            <input type="text" name="search" class="form-control" placeholder="Search by title or username" value="{{ request.GET.search }}">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+</div>
+
+<!-- Essays List -->
+<div class="table-container">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>User</th>
+                <th>Competition</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for essay in essays %}
+            <tr>
+                <td>{{ essay.title|truncatechars:50 }}</td>
+                <td>
+                    <strong>{{ essay.user.username }}</strong><br>
+                    <small class="text-muted">{{ essay.user.email }}</small>
+                </td>
+                <td>{{ essay.competition.title|truncatechars:30 }}</td>
+                <td>
+                    <span class="badge badge-{{ essay.status }}">
+                        {{ essay.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    {% if essay.total_score %}
+                        <div class="progress" style="height: 5px; width: 100px;">
+                            <div class="progress-bar bg-{% if essay.total_score >= 80 %}success{% elif essay.total_score >= 60 %}warning{% else %}danger{% endif %}" 
+                                 style="width: {{ essay.total_score }}%"></div>
+                        </div>
+                        <small>{{ essay.total_score|floatformat:1 }}%</small>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {{ essay.submitted_at|date:"M d, Y" }}<br>
+                    <small class="text-muted">{{ essay.submitted_at|timesince }} ago</small>
+                </td>
+                <td>
+                    {% if essay.status == 'submitted' %}
+                    <a href="{% url 'admin:competition_essay_change' essay.id %}" target="_blank" class="action-btn" style="background: #28a745; color: white;">
+                        <i class="fas fa-check"></i> Review
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'admin:competition_essay_change' essay.id %}" target="_blank" class="action-btn" style="background: #007bff; color: white;">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center">No essays found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Pagination -->
+    {% if essays.has_other_pages %}
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if essays.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ essays.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.competition %}&competition={{ request.GET.competition }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for i in essays.paginator.page_range %}
+                {% if essays.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.competition %}&competition={{ request.GET.competition }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                        {{ i }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if essays.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ essays.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.competition %}&competition={{ request.GET.competition }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    Next
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

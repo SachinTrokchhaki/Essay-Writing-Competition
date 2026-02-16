@@ -236,3 +236,4 @@ def delete_essay(request, pk):
         messages.success(request, 'Essay deleted successfully.')
         return redirect('user:my_essays')
     return redirect('user:my_essays')
+
