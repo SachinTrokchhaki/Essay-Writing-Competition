@@ -6,8 +6,9 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.contrib import messages
+from django.conf import settings
 import json
-from datetime import date
+from datetime import date, datetime, timedelta  # ADD THIS LINE
 from django.db import models 
 from django.http import HttpResponse
 from .reports import generate_essay_pdf, generate_competition_report
@@ -29,17 +30,52 @@ def competition_detail(request, pk):
     else:
         can_submit, message = False, "Please login to submit"
     
-    # Get leaderboard for this competition
-    leaderboard = Essay.objects.filter(
-        competition=competition,
-        status='accepted'
-    ).order_by('-total_score')[:10]
+    # Check if user is admin/staff
+    is_admin = request.user.is_staff or request.user.is_superuser
+    
+    # Get current time
+    now = timezone.now()
+    
+    # Convert competition.deadline (date) to datetime for comparison
+    deadline_datetime = timezone.make_aware(
+        datetime.combine(competition.deadline, datetime.min.time())
+    )
+    
+    # Calculate when results should be visible (deadline + 5 minutes)
+    publish_time = deadline_datetime + timedelta(minutes=settings.RESULT_PUBLISH_DELAY_MINUTES)
+    
+    # Determine if results should be visible
+    if is_admin:
+        # Admin can always see results
+        results_visible = True
+    else:
+        # Regular users: only see results after deadline + delay
+        results_visible = now >= publish_time
+    
+    # Get leaderboard for this competition (with delay check)
+    if results_visible:
+        leaderboard = Essay.objects.filter(
+            competition=competition,
+            status='accepted'
+        ).order_by('-total_score')[:10]
+        
+        # Get top 5 for preview
+        top_essays = leaderboard[:5]
+    else:
+        leaderboard = Essay.objects.none()
+        top_essays = []
     
     context = {
         'competition': competition,
         'can_submit': can_submit,
         'submit_message': message,
         'leaderboard': leaderboard,
+        'top_essays': top_essays,
+        'results_visible': results_visible,
+        'deadline': competition.deadline,
+        'deadline_datetime': deadline_datetime,
+        'publish_time': publish_time,
+        'is_admin': is_admin,
     }
     return render(request, 'competition/detail.html', context)
 
@@ -361,15 +397,46 @@ def evaluate_essay(request, pk):
     }
     return render(request, 'competition/admin/evaluate_essay.html', context)
 
+
 def leaderboard(request, pk=None):
-    """Competition-specific leaderboard"""
+    """Competition-specific leaderboard with delayed results"""
     if pk:
         # Specific competition leaderboard
         competition = get_object_or_404(EssayCompetition, pk=pk, is_active=True)
-        essays = Essay.objects.filter(
-            competition=competition,
-            status='accepted'
-        ).select_related('user').order_by('-total_score')
+        
+        # Check if user is admin/staff
+        is_admin = request.user.is_staff or request.user.is_superuser
+        
+        # Get current time
+        now = timezone.now()
+        
+        # Convert competition.deadline (date) to datetime for comparison
+        deadline_datetime = timezone.make_aware(
+            datetime.combine(competition.deadline, datetime.min.time())
+        )
+        
+        # Calculate when results should be visible (deadline + 5 minutes)
+        publish_time = deadline_datetime + timedelta(minutes=settings.RESULT_PUBLISH_DELAY_MINUTES)
+        
+        # Determine if results should be visible
+        if is_admin:
+            # Admin can always see results
+            results_visible = True
+            essays = Essay.objects.filter(
+                competition=competition,
+                status='accepted'
+            ).select_related('user').order_by('-total_score')
+        else:
+            # Regular users: only see results after deadline + delay
+            if now >= publish_time:
+                results_visible = True
+                essays = Essay.objects.filter(
+                    competition=competition,
+                    status='accepted'
+                ).select_related('user').order_by('-total_score')
+            else:
+                results_visible = False
+                essays = Essay.objects.none()  # Empty queryset
         
         # Add rank to each essay (handling ties correctly)
         rank = 1
@@ -392,12 +459,29 @@ def leaderboard(request, pk=None):
                 prev_score = essay.total_score
                 same_score_count = 1
         
-        # Get user's essays if authenticated
-        user_essays = None
+        # Get user's essay if authenticated
+        user_essay = None
         if request.user.is_authenticated:
-            user_essays = essays.filter(user=request.user)
+            user_essay = Essay.objects.filter(
+                competition=competition,
+                user=request.user
+            ).first()
         
         page_title = f'Leaderboard: {competition.title}'
+        
+        context = {
+            'competition': competition,
+            'essays': essays,
+            'page_title': page_title,
+            'user_essay': user_essay,
+            'results_visible': results_visible,
+            'deadline': competition.deadline,
+            'deadline_datetime': deadline_datetime,
+            'publish_time': publish_time,
+            'now': now,
+            'is_admin': is_admin,
+        }
+        return render(request, 'competition/leaderboard.html', context)
         
     else:
         # Global view - show list of competitions with leaderboards
@@ -411,14 +495,7 @@ def leaderboard(request, pk=None):
             'competitions': competitions,
             'page_title': 'Competition Leaderboards'
         })
-    
-    context = {
-        'competition': competition,
-        'essays': essays,
-        'page_title': page_title,
-        'user_essays': user_essays,  # Pass pre-filtered user essays
-    }
-    return render(request, 'competition/leaderboard.html', context)
+
 
 @login_required
 def my_results(request):
@@ -459,6 +536,7 @@ def my_results(request):
     }
     return render(request, 'competition/my_results.html', context)
 
+
 @login_required
 def essay_result_detail(request, pk):
     """Detailed view of a single essay result"""
@@ -491,7 +569,6 @@ def essay_result_detail(request, pk):
     return render(request, 'competition/essay_result_detail.html', context)
 
 
-
 @staff_member_required
 def download_essay_pdf(request, pk):
     """Download PDF report for a single essay"""
@@ -505,6 +582,7 @@ def download_essay_pdf(request, pk):
         messages.error(request, f"Error generating PDF: {str(e)}")
         return redirect('admin:competition_essay_changelist')
 
+
 @staff_member_required  
 def download_competition_pdf(request, pk):
     """Download PDF report for entire competition"""
@@ -517,6 +595,7 @@ def download_competition_pdf(request, pk):
     except Exception as e:
         messages.error(request, f"Error generating PDF: {str(e)}")
         return redirect('admin:competition_essaycompetition_changelist')
+
 
 @staff_member_required
 def view_essay_report(request, pk):

@@ -155,8 +155,8 @@
           {% endwith %}
         {% endif %}
         
-        <!-- Leaderboard Button (Always show if competition is active) -->
-        <a href="/competition/leaderboard/{{ competition.pk }}/"  class="btn btn-outline-warning">
+        <!-- Leaderboard Button -->
+        <a href="{% url 'competition:leaderboard_detail' competition.pk %}" class="btn btn-outline-warning">
           <i data-lucide="trophy"></i>
           View Leaderboard
         </a>
@@ -169,6 +169,17 @@
           {{ submit_message }}
           {% if "login" in submit_message %}
             <a href="{% url 'user:login' %}?next={{ request.path }}" class="alert-link ms-2">Login here</a>
+          {% endif %}
+        </div>
+      {% endif %}
+      
+      <!-- Admin Notice -->
+      {% if is_admin %}
+        <div class="alert alert-warning mt-3">
+          <i data-lucide="crown" class="me-2"></i>
+          <strong>Admin View:</strong> You're seeing this as an admin. 
+          {% if not results_visible %}
+            Results will be visible to regular users on {{ publish_time|date:"F d, Y H:i" }}.
           {% endif %}
         </div>
       {% endif %}
@@ -246,8 +257,12 @@
                 <div class="stat-content">
                   <div class="stat-label">Leaderboard</div>
                   <div class="stat-value">
-                    <a href="/competition/leaderboard/{{ competition.pk }}/" class="text-decoration-none">
-                      View Rankings
+                    <a href="{% url 'competition:leaderboard_detail' competition.pk %}" class="text-decoration-none">
+                      {% if results_visible %}
+                        View Rankings
+                      {% else %}
+                        <span class="text-warning">Available {{ publish_time|date:"M d" }}</span>
+                      {% endif %}
                     </a>
                   </div>
                 </div>
@@ -264,17 +279,18 @@
           <i data-lucide="trophy" class="me-2"></i>
           Top 5 Rankings
         </h3>
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Participant</th>
-                <th>Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% with top_essays=competition|get_top_essays:5 %}
+        
+        {% if results_visible %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Participant</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody>
                 {% for essay in top_essays %}
                 <tr {% if essay.user == user %}class="table-info"{% endif %}>
                   <td>
@@ -297,16 +313,36 @@
                   </td>
                 </tr>
                 {% endfor %}
-              {% endwith %}
-            </tbody>
-          </table>
-        </div>
-        <div class="text-center mt-3">
-          <a href="/competition/leaderboard/{{ competition.pk }}/"  class="btn btn-outline-warning">
-            <i data-lucide="trophy" class="me-2"></i>
-            View Full Leaderboard
-          </a>
-        </div>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="text-center mt-3">
+            <a href="{% url 'competition:leaderboard_detail' competition.pk %}" class="btn btn-outline-warning">
+              <i data-lucide="trophy" class="me-2"></i>
+              View Full Leaderboard
+            </a>
+          </div>
+        {% else %}
+          <!-- Show countdown message instead of leaderboard preview -->
+          <div class="alert alert-warning">
+            <div class="d-flex align-items-center">
+              <i data-lucide="clock" class="me-3" style="width: 24px; height: 24px;"></i>
+              <div>
+                <strong>Results Coming Soon</strong>
+                <p class="mb-0">Leaderboard will be visible on {{ publish_time|date:"F d, Y H:i" }} after the deadline.</p>
+              </div>
+            </div>
+          </div>
+          
+          {% if is_admin %}
+          <div class="alert alert-info mt-2">
+            <i data-lucide="info" class="me-2"></i>
+            <strong>Admin Notice:</strong> You can see the leaderboard in admin view.
+            <a href="{% url 'competition:leaderboard_detail' competition.pk %}" class="alert-link">View Leaderboard</a>
+          </div>
+          {% endif %}
+        {% endif %}
       </div>
       {% endif %}
     </div>
@@ -460,6 +496,12 @@
     .alert-info {
       background-color: rgba(59, 130, 246, 0.1);
       border-color: rgba(59, 130, 246, 0.3);
+      color: var(--foreground);
+    }
+    
+    .alert-warning {
+      background-color: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
       color: var(--foreground);
     }
     

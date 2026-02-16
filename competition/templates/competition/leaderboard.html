@@ -98,6 +98,40 @@
         margin: 2px;
     }
     
+    /* Countdown timer styling */
+    .countdown-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        text-align: center;
+        margin-top: 1.5rem;
+    }
+    
+    .countdown-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        display: inline-block;
+        padding: 0 0.5rem;
+        min-width: 80px;
+    }
+    
+    .countdown-label {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.8;
+    }
+    
+    .admin-badge {
+        background-color: #ffc107;
+        color: #000;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        margin-left: 10px;
+        font-weight: normal;
+    }
+    
     /* Responsive table */
     @media (max-width: 768px) {
         .table-responsive {
@@ -115,9 +149,13 @@
             padding: 4px 8px !important;
         }
         
-        /* Hide evaluated on mobile if needed */
         .evaluated-column {
             min-width: 100px;
+        }
+        
+        .countdown-number {
+            font-size: 1.5rem;
+            min-width: 50px;
         }
     }
 </style>
@@ -135,6 +173,11 @@
                 <h1 class="mb-0 competition-title">
                     <i class="fas fa-trophy text-warning me-2"></i>
                     {{ page_title }}
+                    {% if is_admin %}
+                        <span class="admin-badge">
+                            <i class="fas fa-crown me-1"></i>Admin View
+                        </span>
+                    {% endif %}
                 </h1>
                 <div>
                     <a href="{% url 'competition:leaderboard' %}" class="btn btn-outline-primary me-2">
@@ -189,8 +232,8 @@
                                     <i class="fas fa-file-text"></i>
                                 </div>
                                 <div>
-                                    <p class="mb-0"><strong>Participants</strong></p>
-                                    <p class="mb-0 text-muted">{{ essays|length }} participants</p>
+                                    <p class="mb-0"><strong>Total Participants</strong></p>
+                                    <p class="mb-0 text-muted">{{ competition.essays.count }} total</p>
                                 </div>
                             </div>
                         </div>
@@ -198,162 +241,270 @@
                 </div>
             </div>
             
-            {% if essays %}
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <i class="fas fa-chart-line me-2"></i>
-                    Leaderboard
-                    <span class="badge bg-light text-dark ms-2">{{ essays|length }} participants</span>
+            <!-- User's submitted essay info (if any) -->
+            {% if user_essay %}
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Your Submission
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th style="width: 80px;" class="text-center">Rank</th>
-                                    <th>Participant</th>
-                                    <th>Essay Title</th>
-                                    <th class="text-center">Topic</th>
-                                    <th class="text-center">Cohesion</th>
-                                    <th class="text-center">Grammar</th>
-                                    <th class="text-center">Structure</th>
-                                    <th class="text-center"><strong>Total</strong></th>
-                                    <th class="text-center evaluated-column">Evaluated On</th> <!-- ADDED THIS -->
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for essay in essays %}
-                                <tr {% if essay.user == request.user %}class="table-info"{% endif %}>
-                                    <td class="text-center align-middle">
-                                        <span class="badge {% if essay.rank == 1 %}bg-warning{% elif essay.rank == 2 %}bg-secondary{% elif essay.rank == 3 %}bg-danger{% else %}bg-light text-dark border{% endif %} fs-6 py-2 px-3">
-                                            #{{ essay.rank }}
-                                        </span>
-                                    </td>
-                                    <td class="align-middle">
-                                        {% if essay.user == request.user %}
-                                        <strong class="text-primary">
-                                            <i class="fas fa-user me-1"></i>
-                                            You
-                                        </strong>
-                                        {% else %}
-                                        {{ essay.user.get_full_name|default:essay.user.username }}
-                                        {% endif %}
-                                    </td>
-                                    <td class="align-middle">
-                                        <strong>{{ essay.title }}</strong>
-                                        {% if essay.user == request.user %}
-                                        <span class="badge bg-info ms-2">Your Essay</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-center align-middle">{{ essay.title_relevance_score|floatformat:1 }}</td>
-                                    <td class="text-center align-middle">{{ essay.cohesion_score|floatformat:1 }}</td>
-                                    <td class="text-center align-middle">{{ essay.grammar_score|floatformat:1 }}</td>
-                                    <td class="text-center align-middle">{{ essay.structure_score|floatformat:1 }}</td>
-                                    <td class="text-center align-middle">
-                                        <strong class="text-primary" style="font-size: 1.1rem;">
-                                            {{ essay.total_score|floatformat:1 }}
-                                        </strong>
-                                    </td>
-                                    <td class="text-center align-middle evaluated-column">
-                                        {% if essay.evaluated_at %}
-                                            {{ essay.evaluated_at|date:"Y-m-d" }}
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">{{ user_essay.title }}</h5>
+                            <p class="text-muted mb-0">
+                                Status: 
+                                <span class="badge {% if user_essay.status == 'accepted' %}bg-success{% elif user_essay.status == 'rejected' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    {{ user_essay.get_status_display }}
+                                </span>
+                                {% if user_essay.submitted_at %}
+                                    | Submitted: {{ user_essay.submitted_at|date:"M d, Y H:i" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            {% if user_essay.status == 'accepted' and results_visible %}
+                                <div class="display-6 text-success fw-bold">{{ user_essay.total_score|floatformat:1 }}</div>
+                                <small class="text-muted">Your Score</small>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endif %}
             
-            <!-- User's position if not in top list -->
-            {% if user.is_authenticated %}
-                {% for essay in essays %}
-                    {% if essay.user == user %}
-                        <div class="card mt-4 border-primary">
-                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="fas fa-user-graduate me-2"></i>
-                                    Your Competition Performance
+            <!-- Results Section -->
+            {% if results_visible %}
+                <!-- Show Leaderboard -->
+                {% if essays %}
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Leaderboard
+                        <span class="badge bg-light text-dark ms-2">{{ essays|length }} accepted entries</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="width: 80px;" class="text-center">Rank</th>
+                                        <th>Participant</th>
+                                        <th>Essay Title</th>
+                                        <th class="text-center">Topic</th>
+                                        <th class="text-center">Cohesion</th>
+                                        <th class="text-center">Grammar</th>
+                                        <th class="text-center">Structure</th>
+                                        <th class="text-center"><strong>Total</strong></th>
+                                        <th class="text-center evaluated-column">Evaluated On</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for essay in essays %}
+                                    <tr {% if essay.user == request.user %}class="table-info"{% endif %}>
+                                        <td class="text-center align-middle">
+                                            <span class="badge {% if essay.rank == 1 %}bg-warning{% elif essay.rank == 2 %}bg-secondary{% elif essay.rank == 3 %}bg-danger{% else %}bg-light text-dark border{% endif %} fs-6 py-2 px-3">
+                                                #{{ essay.rank }}
+                                            </span>
+                                        </td>
+                                        <td class="align-middle">
+                                            {% if essay.user == request.user %}
+                                            <strong class="text-primary">
+                                                <i class="fas fa-user me-1"></i>
+                                                You
+                                            </strong>
+                                            {% else %}
+                                            {{ essay.user.get_full_name|default:essay.user.username }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="align-middle">
+                                            <strong>{{ essay.title }}</strong>
+                                            {% if essay.user == request.user %}
+                                            <span class="badge bg-info ms-2">Your Essay</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center align-middle">{{ essay.title_relevance_score|floatformat:1 }}</td>
+                                        <td class="text-center align-middle">{{ essay.cohesion_score|floatformat:1 }}</td>
+                                        <td class="text-center align-middle">{{ essay.grammar_score|floatformat:1 }}</td>
+                                        <td class="text-center align-middle">{{ essay.structure_score|floatformat:1 }}</td>
+                                        <td class="text-center align-middle">
+                                            <strong class="text-primary" style="font-size: 1.1rem;">
+                                                {{ essay.total_score|floatformat:1 }}
+                                            </strong>
+                                        </td>
+                                        <td class="text-center align-middle evaluated-column">
+                                            {% if essay.evaluated_at %}
+                                                {{ essay.evaluated_at|date:"Y-m-d" }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- User's position card (if user is in essays) -->
+                {% if user.is_authenticated %}
+                    {% for essay in essays %}
+                        {% if essay.user == user %}
+                            <div class="card mt-4 border-primary">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-user-graduate me-2"></i>
+                                        Your Competition Performance
+                                    </div>
+                                    <span class="badge bg-warning text-dark fs-6">Rank #{{ essay.rank }}</span>
                                 </div>
-                                <span class="badge bg-warning text-dark fs-6">Rank #{{ essay.rank }}</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="row align-items-center">
-                                    <div class="col-md-8">
-                                        <h5 class="card-title">{{ essay.title }}</h5>
-                                        <div class="row mt-3">
-                                            <div class="col-6 col-md-3">
-                                                <div class="text-center p-2 border rounded">
-                                                    <div class="fw-bold text-primary">{{ essay.title_relevance_score|floatformat:1 }}</div>
-                                                    <small class="text-muted">Topic</small>
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <h5 class="card-title">{{ essay.title }}</h5>
+                                            <div class="row mt-3">
+                                                <div class="col-6 col-md-3">
+                                                    <div class="text-center p-2 border rounded">
+                                                        <div class="fw-bold text-primary">{{ essay.title_relevance_score|floatformat:1 }}</div>
+                                                        <small class="text-muted">Topic</small>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="text-center p-2 border rounded">
-                                                    <div class="fw-bold text-primary">{{ essay.cohesion_score|floatformat:1 }}</div>
-                                                    <small class="text-muted">Cohesion</small>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="text-center p-2 border rounded">
+                                                        <div class="fw-bold text-primary">{{ essay.cohesion_score|floatformat:1 }}</div>
+                                                        <small class="text-muted">Cohesion</small>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="text-center p-2 border rounded">
-                                                    <div class="fw-bold text-primary">{{ essay.grammar_score|floatformat:1 }}</div>
-                                                    <small class="text-muted">Grammar</small>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="text-center p-2 border rounded">
+                                                        <div class="fw-bold text-primary">{{ essay.grammar_score|floatformat:1 }}</div>
+                                                        <small class="text-muted">Grammar</small>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-6 col-md-3">
-                                                <div class="text-center p-2 border rounded">
-                                                    <div class="fw-bold text-primary">{{ essay.structure_score|floatformat:1 }}</div>
-                                                    <small class="text-muted">Structure</small>
+                                                <div class="col-6 col-md-3">
+                                                    <div class="text-center p-2 border rounded">
+                                                        <div class="fw-bold text-primary">{{ essay.structure_score|floatformat:1 }}</div>
+                                                        <small class="text-muted">Structure</small>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <!-- Add this before the table for debugging -->
-                                     <div class="alert alert-info d-none"> <!-- Add d-none to hide it later -->
-                                        <h5>Debug Information:</h5>
-                                        {% for essay in essays %}
-                                        <p>
-                                            Essay: {{ essay.title }}<br>
-                                            Evaluated At: {{ essay.evaluated_at }}<br>
-                                            Status: {{ essay.status }}<br>
-                                            Has evaluated_at: {{ essay.evaluated_at|yesno:"Yes,No" }}
-                                        </p>
-                                        {% endfor %}
-                                    </div>
-                                    <div class="col-md-4 text-center">
-                                        <div class="display-4 fw-bold text-primary">{{ essay.total_score|floatformat:1 }}</div>
-                                        <p class="text-muted mb-0">Overall Score</p>
-                                        <p class="small text-muted">Out of {{ essays|length }} participants</p>
-                                        {% if essay.evaluated_at %}
-                                            <p class="small text-muted mt-2">
-                                                <i class="fas fa-calendar-check me-1"></i>
-                                                Evaluated: {{ essay.evaluated_at|date:"Y-m-d" }}
-                                            </p>
-                                        {% endif %}
+                                        <div class="col-md-4 text-center">
+                                            <div class="display-4 fw-bold text-primary">{{ essay.total_score|floatformat:1 }}</div>
+                                            <p class="text-muted mb-0">Overall Score</p>
+                                            <p class="small text-muted">Out of {{ essays|length }} participants</p>
+                                            {% if essay.evaluated_at %}
+                                                <p class="small text-muted mt-2">
+                                                    <i class="fas fa-calendar-check me-1"></i>
+                                                    Evaluated: {{ essay.evaluated_at|date:"Y-m-d" }}
+                                                </p>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                
+                {% else %}
+                <div class="alert alert-warning text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3 text-warning"></i>
+                    <h4>No Results Available</h4>
+                    <p class="mb-0">No accepted essays found for this competition.</p>
+                </div>
+                {% endif %}
             
             {% else %}
-            <div class="alert alert-info text-center py-5">
-                <i class="fas fa-info-circle fa-3x mb-3 text-info"></i>
-                <h4>No Evaluated Essays Yet</h4>
-                <p class="mb-3">No essays have been evaluated for this competition yet. Check back later!</p>
-                <a href="{% url 'competition:detail' competition.pk %}" class="btn btn-info">
-                    <i class="fas fa-pen-alt me-1"></i>
-                    Submit Your Essay
-                </a>
-            </div>
+                <!-- Show Countdown/Waiting Message -->
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <i class="fas fa-clock me-2"></i>
+                        Results Coming Soon
+                    </div>
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-hourglass-half fa-4x mb-3 text-warning"></i>
+                        <h3>Results will be published after the deadline</h3>
+                        <p class="lead mb-3">
+                            <strong>Deadline:</strong> {{ deadline|date:"F d, Y" }} at 23:59
+                        </p>
+                        <p class="mb-4">
+                            <strong>Results available on:</strong> {{ publish_time|date:"F d, Y H:i" }}
+                        </p>
+                        
+                        <!-- Countdown Timer -->
+                        <div class="countdown-box mt-4" data-publish="{{ publish_time|date:'Y-m-d H:i:s' }}">
+                            <div class="row justify-content-center">
+                                <div class="col-auto">
+                                    <div class="countdown-number" id="days">00</div>
+                                    <div class="countdown-label">Days</div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="countdown-number" id="hours">00</div>
+                                    <div class="countdown-label">Hours</div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="countdown-number" id="minutes">00</div>
+                                    <div class="countdown-label">Minutes</div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="countdown-number" id="seconds">00</div>
+                                    <div class="countdown-label">Seconds</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if is_admin %}
+                        <div class="alert alert-info mt-4 mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Admin Notice:</strong> You're seeing this because you're an admin. 
+                            Regular users cannot see results until {{ publish_time|date:"F d, Y H:i" }}.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Countdown Timer JavaScript -->
+<script>
+function updateCountdown() {
+    const publishElement = document.querySelector('[data-publish]');
+    if (!publishElement) return;
+    
+    const publishTime = new Date(publishElement.dataset.publish).getTime();
+    const now = new Date().getTime();
+    const diff = publishTime - now;
+    
+    if (diff <= 0) {
+        // Time is up - refresh the page
+        location.reload();
+        return;
+    }
+    
+    // Calculate time units
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    // Update display
+    const daysEl = document.getElementById('days');
+    const hoursEl = document.getElementById('hours');
+    const minutesEl = document.getElementById('minutes');
+    const secondsEl = document.getElementById('seconds');
+    
+    if (daysEl) daysEl.textContent = days.toString().padStart(2, '0');
+    if (hoursEl) hoursEl.textContent = hours.toString().padStart(2, '0');
+    if (minutesEl) minutesEl.textContent = minutes.toString().padStart(2, '0');
+    if (secondsEl) secondsEl.textContent = seconds.toString().padStart(2, '0');
+}
+
+// Update every second
+setInterval(updateCountdown, 1000);
+updateCountdown(); // Initial call
+</script>
 {% endblock %}

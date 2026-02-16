@@ -150,3 +150,6 @@ LOGOUT_REDIRECT_URL = '/'  # Where to redirect after logout
 # For development only - emails will print to console
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Delay before publishing results (in minutes)
+RESULT_PUBLISH_DELAY_MINUTES = 5

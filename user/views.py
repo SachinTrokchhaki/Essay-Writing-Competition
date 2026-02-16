@@ -81,7 +81,10 @@ def my_profile(request):
         total_submissions = user_essays.count()
         draft_count = user_essays.filter(status='draft').count()
         submitted_count = user_essays.filter(status='submitted').count()
-        pending_count = user_essays.filter(status='pending_review').count()
+        
+        # FIX: Use 'submitted' for pending_count since template uses it
+        pending_count = user_essays.filter(status='submitted').count()  # Changed from 'pending_review'
+        
         accepted_count = user_essays.filter(status='accepted').count()
         rejected_count = user_essays.filter(status='rejected').count()
         
@@ -89,10 +92,8 @@ def my_profile(request):
         total_reviewed = accepted_count + rejected_count
         success_rate = (accepted_count / total_reviewed * 100) if total_reviewed > 0 else 0
         
-        # Recent essays (non-draft)
-        recent_essays = user_essays.exclude(
-            status='draft'
-        ).order_by('-updated_at')[:5]
+        # Recent essays (all essays ordered by updated_at)
+        recent_essays = user_essays.order_by('-updated_at')[:5]
         
         # Active competitions
         try:
@@ -100,16 +101,24 @@ def my_profile(request):
                 is_active=True,
                 deadline__gte=today
             ).order_by('deadline')[:5]
-        except:
+            
+            # Add days_left to each competition for template
+            for competition in active_competitions:
+                days_left = (competition.deadline - today).days
+                competition.days_left = max(0, days_left)
+                
+        except Exception as e:
+            print(f"Competition error: {e}")
             active_competitions = []
         
         # Get competitions where user has accepted essays for leaderboards
         user_competitions_with_leaderboards = EssayCompetition.objects.filter(
-            essay__user=user,
-            essay__status='accepted'
+            essays__user=user,  # FIX: Changed from 'essay__user' to 'essays__user'
+            essays__status='accepted'
         ).distinct()
         
     except Exception as e:
+        print(f"Profile error: {e}")
         # If models don't exist yet, use defaults
         total_submissions = 0
         draft_count = 0
@@ -128,13 +137,13 @@ def my_profile(request):
         'total_submissions': total_submissions,
         'draft_count': draft_count,
         'submitted_count': submitted_count,
-        'pending_count': pending_count,
+        'pending_count': pending_count,  # Now using submitted count
         'accepted_count': accepted_count,
         'rejected_count': rejected_count,
         'success_rate': success_rate,
         'recent_essays': recent_essays,
         'active_competitions': active_competitions,
-        'user_competitions_with_leaderboards': user_competitions_with_leaderboards,  # Add this
+        'user_competitions_with_leaderboards': user_competitions_with_leaderboards,
     }
     
     return render(request, 'user/profile.html', context)
