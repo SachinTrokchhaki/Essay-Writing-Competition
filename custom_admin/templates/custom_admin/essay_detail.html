@@ -1,0 +1,444 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Essay Details: {{ essay.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4>{{ essay.title }}</h4>
+                <span class="badge badge-{{ essay.status }}" style="font-size: 1rem;">
+                    {{ essay.get_status_display }}
+                </span>
+            </div>
+            
+            <!-- Essay Metadata -->
+            <table class="table">
+                <tr>
+                    <th style="width: 150px;">User:</th>
+                    <td>
+                        <a href="{% url 'custom_admin:user_detail' essay.user.id %}">
+                            {{ essay.user.username }}
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Email:</th>
+                    <td>{{ essay.user.email }}</td>
+                </tr>
+                <tr>
+                    <th>Competition:</th>
+                    <td>
+                        <a href="{% url 'custom_admin:competition_edit' essay.competition.id %}">
+                            {{ essay.competition.title }}
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Language:</th>
+                    <td>{{ essay.get_language_display }}</td>
+                </tr>
+                <tr>
+                    <th>Submitted:</th>
+                    <td>{{ essay.submitted_at|date:"F d, Y H:i" }}</td>
+                </tr>
+                <tr>
+                    <th>Word Count:</th>
+                    <td>{{ essay.content|wordcount }} words</td>
+                </tr>
+                {% if essay.evaluated_at %}
+                <tr>
+                    <th>Evaluated:</th>
+                    <td>{{ essay.evaluated_at|date:"F d, Y H:i" }}</td>
+                </tr>
+                {% endif %}
+                {% if essay.reviewed_by %}
+                <tr>
+                    <th>Reviewed by:</th>
+                    <td>{{ essay.reviewed_by.username }}</td>
+                </tr>
+                {% endif %}
+            </table>
+            
+            <!-- Scores Section -->
+            {% if essay.total_score %}
+            <div class="card mt-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-chart-bar"></i> Evaluation Scores
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Title Relevance:</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" style="width: {{ essay.title_relevance_score }}%">
+                                                {{ essay.title_relevance_score|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Cohesion:</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" style="width: {{ essay.cohesion_score }}%">
+                                                {{ essay.cohesion_score|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Grammar:</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-warning" style="width: {{ essay.grammar_score }}%">
+                                                {{ essay.grammar_score|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Structure:</th>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-danger" style="width: {{ essay.structure_score }}%">
+                                                {{ essay.structure_score|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-center">
+                                <h5>Total Score</h5>
+                                <div class="display-1" style="color: {% if essay.total_score >= 80 %}green{% elif essay.total_score >= 60 %}orange{% else %}red{% endif %};">
+                                    {{ essay.total_score|floatformat:1 }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Essay Content - USING THE WORKING SOLUTION FROM MY_ESSAYS.HTML -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <i class="fas fa-file-alt"></i> Essay Content
+                </div>
+                <div class="card-body">
+                    <div id="essayContentContainer" class="essay-paper"></div>
+                </div>
+            </div>
+            
+            <!-- Admin Notes -->
+            {% if essay.admin_notes %}
+            <div class="card mt-3">
+                <div class="card-header bg-warning">
+                    <i class="fas fa-sticky-note"></i> Admin Notes
+                </div>
+                <div class="card-body">
+                    {{ essay.admin_notes|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'custom_admin:essays' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Essays
+                </a>
+                <div class="btn-group">
+                    <a href="{% url 'custom_admin:export_essay_detail_pdf' essay.id %}" class="btn btn-secondary">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </a>
+                    {% if essay.status == 'submitted' %}
+                    <a href="{% url 'custom_admin:essay_review' essay.id %}" class="btn btn-success">
+                        <i class="fas fa-check"></i> Review
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'custom_admin:essay_edit' essay.id %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'custom_admin:essay_delete' essay.id %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this essay?')">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // ESSAY CONTENT FORMATTING - WORKING SOLUTION FROM MY_ESSAYS.HTML
+    // ============================================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        formatAndDisplayEssayContent();
+    });
+    
+    function formatAndDisplayEssayContent() {
+        const container = document.getElementById('essayContentContainer');
+        if (!container) return;
+        
+        // Get essay data from Django template
+        const essayData = {
+            title: "{{ essay.title|escapejs }}",
+            competition: "{{ essay.competition.title|escapejs }}",
+            content: "{{ essay.content|escapejs }}",
+            wordCount: "{{ essay.content|wordcount }}",
+            submittedDate: "{{ essay.submitted_at|date:'F d, Y'|escapejs }}",
+            status: "{{ essay.status|escapejs }}",
+            reviewedBy: "{% if essay.reviewed_by %}{{ essay.reviewed_by.username|escapejs }}{% endif %}"
+        };
+        
+        const formattedContent = formatEssayContent(essayData.content);
+        
+        const html = `
+            <div class="essay-paper">
+                <div class="essay-header">
+                    <h1 class="essay-title">${escapeHtml(essayData.title)}</h1>
+                    <p class="essay-competition">${escapeHtml(essayData.competition)}</p>
+                    
+                    <div class="essay-meta">
+                        <span><strong>Submitted:</strong> ${escapeHtml(essayData.submittedDate)}</span>
+                        <span><strong>Reviewed by:</strong> ${escapeHtml(essayData.reviewedBy || 'Not reviewed yet')}</span>
+                        <span><strong>Word Count:</strong> ${escapeHtml(essayData.wordCount)}</span>
+                        <span><strong>Status:</strong> ${escapeHtml(essayData.status.toUpperCase())}</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="essay-body">
+                    ${formattedContent}
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    function decodeContent(content) {
+        if (!content) return "";
+        
+        let decoded = content;
+        
+        // Handle Unicode escape sequences
+        decoded = decoded.replace(/\\u([\dA-F]{4})/gi, (match, hex) => 
+            String.fromCharCode(parseInt(hex, 16))
+        );
+        
+        // Handle HTML entities
+        decoded = decoded.replace(/&#(\d+);/g, (match, dec) => 
+            String.fromCharCode(parseInt(dec, 10))
+        );
+        decoded = decoded.replace(/&#x([\dA-F]+);/gi, (match, hex) => 
+            String.fromCharCode(parseInt(hex, 16))
+        );
+        
+        // Common HTML entities
+        const entities = {
+            '&nbsp;': ' ',
+            '&amp;': '&',
+            '&lt;': '<',
+            '&gt;': '>',
+            '&quot;': '"',
+            '&#39;': "'",
+            '&apos;': "'"
+        };
+        
+        Object.keys(entities).forEach(entity => {
+            decoded = decoded.replace(new RegExp(entity, 'g'), entities[entity]);
+        });
+        
+        return decoded;
+    }
+    
+    function formatEssayContent(content) {
+        if (!content) return "";
+        
+        let cleanContent = decodeContent(content);
+        
+        // Remove lock icons and special characters
+        cleanContent = cleanContent
+            .replace(/[■●•▪▫◼□◆◇►◄▼▲🔒]/g, '') // Remove all special characters
+            .replace(/\s+/g, ' ') // Normalize spaces
+            .trim();
+        
+        // Split into sentences
+        const sentences = cleanContent.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        let formattedContent = '';
+        let currentParagraph = [];
+        let sentenceCount = 0;
+        
+        sentences.forEach(sentence => {
+            currentParagraph.push(sentence.trim());
+            sentenceCount++;
+            
+            // Every 3 sentences, create a paragraph
+            if (sentenceCount >= 3) {
+                formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentParagraph.join('. ')}.</p>`;
+                currentParagraph = [];
+                sentenceCount = 0;
+            }
+        });
+        
+        // Add remaining sentences
+        if (currentParagraph.length > 0) {
+            formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentParagraph.join('. ')}.</p>`;
+        }
+        
+        // If no paragraphs were created (maybe the content has no punctuation)
+        if (!formattedContent && cleanContent) {
+            const words = cleanContent.split(' ');
+            let currentLine = [];
+            
+            words.forEach(word => {
+                currentLine.push(word);
+                if (currentLine.length >= 30) {
+                    formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentLine.join(' ')}</p>`;
+                    currentLine = [];
+                }
+            });
+            
+            if (currentLine.length > 0) {
+                formattedContent += `<p style="text-indent: 2em; line-height: 1.8; text-align: justify; margin-bottom: 1.5rem;">${currentLine.join(' ')}</p>`;
+            }
+        }
+        
+        return formattedContent || '<p class="text-muted">No content available.</p>';
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+
+<style>
+    /* ESSAY PAPER STYLES - FROM MY_ESSAYS.HTML */
+    .essay-paper {
+        background: #ffffff;
+        padding: 30px 40px;
+        font-family: Georgia, "Times New Roman", serif;
+        color: #2c3e50;
+        line-height: 1.6;
+    }
+
+    .essay-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .essay-title {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #2c3e50;
+    }
+
+    .essay-competition {
+        font-size: 1.1rem;
+        color: #7f8c8d;
+        margin-bottom: 20px;
+        font-style: italic;
+    }
+
+    .essay-meta {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: #34495e;
+        margin-top: 15px;
+        flex-wrap: wrap;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .essay-meta span {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 0 10px;
+    }
+
+    .essay-meta strong {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    .essay-body {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        text-align: justify;
+        color: #2c3e50;
+        margin-top: 20px;
+    }
+
+    .essay-body p {
+        text-indent: 2em;
+        line-height: 1.8;
+        text-align: justify;
+        margin-bottom: 1.5rem;
+        color: #2c3e50;
+    }
+
+    /* Progress bars */
+    .progress {
+        height: 20px;
+        margin-bottom: 10px;
+    }
+
+    .progress-bar {
+        line-height: 20px;
+        font-size: 0.8rem;
+    }
+
+    /* Card headers */
+    .card-header.bg-primary {
+        background-color: #007bff !important;
+    }
+
+    .display-1 {
+        font-size: 4rem;
+        font-weight: bold;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .essay-paper {
+            padding: 20px;
+        }
+        
+        .essay-meta {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        
+        .essay-meta span {
+            flex-direction: row;
+            gap: 10px;
+            justify-content: space-between;
+            width: 100%;
+        }
+        
+        .essay-title {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

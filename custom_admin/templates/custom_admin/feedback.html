@@ -5,10 +5,60 @@
 {% block content %}
 <!-- Filter Buttons -->
 <div class="mb-3">
-    <a href="?status=all" class="btn btn-outline-primary {% if not request.GET.status or request.GET.status == 'all' %}active{% endif %}">All</a>
-    <a href="?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">Pending</a>
-    <a href="?status=approved" class="btn btn-outline-success {% if request.GET.status == 'approved' %}active{% endif %}">Approved</a>
-    <a href="?status=rejected" class="btn btn-outline-danger {% if request.GET.status == 'rejected' %}active{% endif %}">Rejected</a>
+    <div class="btn-group" role="group">
+        <a href="{% url 'custom_admin:feedback' %}" class="btn btn-outline-primary {% if not request.GET.status %}active{% endif %}">
+            <i class="fas fa-list"></i> All
+        </a>
+        <a href="?status=pending" class="btn btn-outline-warning {% if request.GET.status == 'pending' %}active{% endif %}">
+            <i class="fas fa-clock"></i> Pending
+        </a>
+        <a href="?status=approved" class="btn btn-outline-success {% if request.GET.status == 'approved' %}active{% endif %}">
+            <i class="fas fa-check-circle"></i> Approved
+        </a>
+        <a href="?status=rejected" class="btn btn-outline-danger {% if request.GET.status == 'rejected' %}active{% endif %}">
+            <i class="fas fa-times-circle"></i> Rejected
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #e3f2fd; color: #1976d2;">
+                <i class="fas fa-comment"></i>
+            </div>
+            <div class="stat-value">{{ feedback_list.paginator.count }}</div>
+            <div class="stat-label">Total Feedback</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #fff3e0; color: #f57c00;">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-value">{{ pending_count|default:"0" }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #e8f5e9; color: #388e3c;">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-value">{{ approved_count|default:"0" }}</div>
+            <div class="stat-label">Approved</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #ffebee; color: #d32f2f;">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-value">{{ featured_count|default:"0" }}</div>
+            <div class="stat-label">Featured</div>
+        </div>
+    </div>
 </div>
 
 <!-- Feedback List -->
@@ -20,7 +70,7 @@
                 <th>Message</th>
                 <th>Status</th>
                 <th>On Homepage</th>
-                <th>Has Reply</th>
+                <th>Reply</th>
                 <th>Submitted</th>
                 <th>Actions</th>
             </tr>
@@ -29,13 +79,20 @@
             {% for feedback in feedback_list %}
             <tr>
                 <td>
-                    <strong>{{ feedback.name }}</strong><br>
-                    <small class="text-muted">{{ feedback.email }}</small>
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-2" style="width: 32px; height: 32px; background: #007bff;">
+                            {{ feedback.name|make_list|first|upper }}
+                        </div>
+                        <div>
+                            <strong>{{ feedback.name }}</strong><br>
+                            <small class="text-muted">{{ feedback.email }}</small>
+                        </div>
+                    </div>
                 </td>
                 <td>
                     <div>{{ feedback.message|truncatechars:100 }}</div>
                     {% if feedback.admin_reply %}
-                        <div class="mt-2 p-2 bg-light">
+                        <div class="mt-2 p-2 bg-light rounded">
                             <small><strong>Reply:</strong> {{ feedback.admin_reply|truncatechars:50 }}</small>
                         </div>
                     {% endif %}
@@ -47,16 +104,22 @@
                 </td>
                 <td>
                     {% if feedback.show_on_homepage %}
-                        <span class="badge badge-success">Yes</span>
+                        <span class="badge badge-success">
+                            <i class="fas fa-star"></i> Featured
+                        </span>
                     {% else %}
-                        <span class="badge badge-secondary">No</span>
+                        <span class="badge badge-secondary">Hidden</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if feedback.has_reply %}
-                        <span class="badge badge-success">Yes</span>
+                        <span class="badge badge-success">
+                            <i class="fas fa-check"></i> Replied
+                        </span>
+                        <br>
+                        <small class="text-muted">{{ feedback.replied_at|timesince }} ago</small>
                     {% else %}
-                        <span class="badge badge-secondary">No</span>
+                        <span class="badge badge-warning">No Reply</span>
                     {% endif %}
                 </td>
                 <td>
@@ -64,37 +127,48 @@
                     <small class="text-muted">{{ feedback.created_at|timesince }} ago</small>
                 </td>
                 <td>
-                    <form method="post" style="display: inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="feedback_id" value="{{ feedback.id }}">
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'custom_admin:feedback_detail' feedback.id %}" class="action-btn" style="background: #17a2b8; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; margin: 2px; display: inline-block;">
+                            <i class="fas fa-eye"></i>
+                        </a>
                         
-                        {% if feedback.status != 'approved' %}
-                        <button type="submit" name="action" value="approve" class="action-btn" style="background: #28a745; color: white; border: none; cursor: pointer;">
-                            <i class="fas fa-check"></i> Approve
-                        </button>
+                        {% if not feedback.has_reply %}
+                        <a href="{% url 'custom_admin:feedback_reply' feedback.id %}" class="action-btn" style="background: #28a745; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; margin: 2px; display: inline-block;">
+                            <i class="fas fa-reply"></i> Reply
+                        </a>
                         {% endif %}
                         
-                        {% if feedback.status != 'rejected' %}
-                        <button type="submit" name="action" value="reject" class="action-btn" style="background: #dc3545; color: white; border: none; cursor: pointer;">
-                            <i class="fas fa-times"></i> Reject
-                        </button>
-                        {% endif %}
-                        
-                        {% if not feedback.show_on_homepage %}
-                        <button type="submit" name="action" value="feature" class="action-btn" style="background: #ffc107; color: #212529; border: none; cursor: pointer;">
-                            <i class="fas fa-star"></i> Feature
-                        </button>
-                        {% endif %}
-                    </form>
-                    
-                    <a href="{% url 'admin:core_feedback_change' feedback.id %}" target="_blank" class="action-btn" style="background: #007bff; color: white;">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="feedback_id" value="{{ feedback.id }}">
+                            
+                            {% if feedback.status != 'approved' %}
+                            <button type="submit" name="action" value="approve" class="action-btn" style="background: #28a745; color: white; border: none; cursor: pointer; padding: 5px 10px; border-radius: 4px; margin: 2px;">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            {% endif %}
+                            
+                            {% if feedback.status != 'rejected' %}
+                            <button type="submit" name="action" value="reject" class="action-btn" style="background: #dc3545; color: white; border: none; cursor: pointer; padding: 5px 10px; border-radius: 4px; margin: 2px;">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                            {% endif %}
+                            
+                            {% if not feedback.show_on_homepage %}
+                            <button type="submit" name="action" value="feature" class="action-btn" style="background: #ffc107; color: #212529; border: none; cursor: pointer; padding: 5px 10px; border-radius: 4px; margin: 2px;">
+                                <i class="fas fa-star"></i> Feature
+                            </button>
+                            {% endif %}
+                        </form>
+                    </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center">No feedback found</td>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p>No feedback found</p>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -106,14 +180,20 @@
         <ul class="pagination justify-content-center">
             {% if feedback_list.has_previous %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ feedback_list.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Previous</a>
+                <a class="page-link" href="?page={{ feedback_list.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
             </li>
             {% endif %}
             
             {% for i in feedback_list.paginator.page_range %}
                 {% if feedback_list.number == i %}
                 <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-                {% else %}
+                {% elif i > feedback_list.number|add:'-3' and i < feedback_list.number|add:'3' %}
                 <li class="page-item">
                     <a class="page-link" href="?page={{ i }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ i }}</a>
                 </li>
@@ -122,7 +202,13 @@
             
             {% if feedback_list.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ feedback_list.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next</a>
+                <a class="page-link" href="?page={{ feedback_list.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                    Next <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
             </li>
             {% endif %}
         </ul>

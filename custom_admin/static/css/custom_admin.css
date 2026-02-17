@@ -1,95 +1,392 @@
-/* static/admin/css/custom_admin.css */
+/* ========================================
+   CUSTOM ADMIN STYLES
+   Clean, organized, and production-ready
+   ======================================== */
 
-/* Custom button styles */
-.button, .action-btn {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    cursor: pointer;
+/* ----------------------------------------
+   1. VARIABLES & ROOT SETTINGS
+   ---------------------------------------- */
+:root {
+    /* Colors */
+    --primary: #007bff;
+    --secondary: #6c757d;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --info: #17a2b8;
+    --dark: #343a40;
+    --light: #f8f9fa;
+    --white: #ffffff;
+    --border: #dee2e6;
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 2px 10px rgba(0,0,0,0.1);
+    --shadow-lg: 0 5px 15px rgba(0,0,0,0.2);
+    
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+    
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+}
+
+/* ----------------------------------------
+   2. RESET & BASE STYLES
+   ---------------------------------------- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--light);
+    color: #212529;
+    line-height: 1.5;
+}
+
+a {
     text-decoration: none;
-    font-size: 12px;
-    transition: background 0.3s;
+}
+
+/* ----------------------------------------
+   3. LAYOUT COMPONENTS
+   ---------------------------------------- */
+
+/* Main Container */
+.table-container {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-lg);
+    overflow-x: auto;
+}
+
+/* Cards */
+.card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-md);
+}
+
+.card-header {
+    padding: var(--space-md) var(--space-lg);
+    background: rgba(0,0,0,0.02);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+}
+
+.card-body {
+    padding: var(--space-lg);
+}
+
+/* Stat Cards */
+.stat-card {
+    background: var(--white);
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-lg);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: var(--space-md);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: var(--space-sm) 0 var(--space-xs);
+    line-height: 1.2;
+}
+
+.stat-label {
+    color: var(--secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ----------------------------------------
+   4. BUTTONS
+   ---------------------------------------- */
+.btn, .action-btn {
     display: inline-block;
+    font-weight: 400;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    border-radius: var(--radius-sm);
+    transition: opacity 0.15s;
+}
+
+.action-btn {
+    padding: 5px 10px;
+    font-size: 12px;
     margin: 2px;
+    color: var(--white);
+    border: none;
 }
 
-.button:hover, .action-btn:hover {
-    opacity: 0.8;
-    color: white;
+.btn:hover, .action-btn:hover {
+    opacity: 0.85;
+    color: var(--white);
 }
 
-/* Progress bar styles */
+/* Button Colors */
+.btn-primary { background: var(--primary); color: var(--white); }
+.btn-success { background: var(--success); color: var(--white); }
+.btn-danger { background: var(--danger); color: var(--white); }
+.btn-warning { background: var(--warning); color: #212529; }
+.btn-info { background: var(--info); color: var(--white); }
+.btn-secondary { background: var(--secondary); color: var(--white); }
+
+/* Button Group */
+.btn-group {
+    display: flex;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+}
+
+.btn-group .btn.active {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+/* ----------------------------------------
+   5. FORMS
+   ---------------------------------------- */
+.form-label {
+    display: block;
+    margin-bottom: var(--space-xs);
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    border: 1px solid #ced4da;
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+.form-text {
+    margin-top: var(--space-xs);
+    font-size: 0.875rem;
+    color: var(--secondary);
+}
+
+.form-check-input {
+    width: 1em;
+    height: 1em;
+    margin-top: 0.25em;
+    vertical-align: top;
+    border: 1px solid rgba(0,0,0,0.25);
+    border-radius: 0.25em;
+}
+
+.form-check-input:checked {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+/* ----------------------------------------
+   6. TABLES
+   ---------------------------------------- */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: var(--space-md);
+    vertical-align: middle;
+    border-top: 1px solid var(--border);
+}
+
+.table thead th {
+    background: var(--light);
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+    color: #495057;
+}
+
+.table tbody tr:hover {
+    background: rgba(0,0,0,0.02);
+}
+
+/* ----------------------------------------
+   7. BADGES
+   ---------------------------------------- */
+.badge {
+    display: inline-block;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    color: var(--white);
+    white-space: nowrap;
+    min-width: 70px;
+    text-align: center;
+}
+
+/* Status Badges */
+.badge-draft { background: var(--secondary); }
+.badge-submitted { background: var(--info); }
+.badge-accepted { background: var(--success); }
+.badge-rejected { background: var(--danger); }
+.badge-pending { background: var(--warning); color: #212529; }
+.badge-approved { background: var(--success); }
+
+/* Color Backgrounds */
+.bg-primary { background: var(--primary); }
+.bg-secondary { background: var(--secondary); }
+.bg-success { background: var(--success); }
+.bg-danger { background: var(--danger); }
+.bg-warning { background: var(--warning); color: #212529; }
+.bg-info { background: var(--info); }
+.bg-light { background: var(--light); }
+
+/* ----------------------------------------
+   8. PROGRESS BARS
+   ---------------------------------------- */
 .progress {
     height: 20px;
-    background-color: #f0f0f0;
-    border-radius: 4px;
+    background: #f0f0f0;
+    border-radius: var(--radius-sm);
     overflow: hidden;
-    margin: 5px 0;
+    margin: var(--space-xs) 0;
+    min-width: 100px;
 }
 
 .progress-bar {
     height: 100%;
-    background-color: #79aec8;
+    background: var(--primary);
     transition: width 0.3s;
     float: left;
 }
 
-.progress-bar.bg-success {
-    background-color: #28a745;
+.progress-bar.bg-success { background: var(--success); }
+.progress-bar.bg-warning { background: var(--warning); }
+.progress-bar.bg-danger { background: var(--danger); }
+
+/* ----------------------------------------
+   9. ALERTS & MESSAGES
+   ---------------------------------------- */
+.alert, .messages li {
+    padding: var(--space-md) var(--space-lg);
+    margin-bottom: var(--space-md);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
 }
 
-.progress-bar.bg-warning {
-    background-color: #ffc107;
+.messages {
+    list-style: none;
+    padding: 0;
+    margin-bottom: var(--space-lg);
 }
 
-.progress-bar.bg-danger {
-    background-color: #dc3545;
+.alert-success, .messages .success {
+    color: #155724;
+    background: #d4edda;
+    border-color: #c3e6cb;
 }
 
-/* Badge styles */
-.badge {
-    display: inline-block;
-    padding: 3px 7px;
-    font-size: 12px;
-    font-weight: bold;
-    border-radius: 4px;
-    color: white;
+.alert-danger, .messages .error {
+    color: #721c24;
+    background: #f8d7da;
+    border-color: #f5c6cb;
 }
 
-.bg-primary { background-color: #007bff; }
-.bg-secondary { background-color: #6c757d; }
-.bg-success { background-color: #28a745; }
-.bg-danger { background-color: #dc3545; }
-.bg-warning { background-color: #ffc107; color: #212529; }
-.bg-info { background-color: #17a2b8; }
-
-/* Badge status colors */
-.badge-draft { background-color: #6c757d; color: white; }
-.badge-submitted { background-color: #17a2b8; color: white; }
-.badge-accepted { background-color: #28a745; color: white; }
-.badge-rejected { background-color: #dc3545; color: white; }
-.badge-pending { background-color: #ffc107; color: #212529; }
-.badge-approved { background-color: #28a745; color: white; }
-
-/* Card styles for statistics */
-.stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+.alert-warning, .messages .warning {
+    color: #856404;
+    background: #fff3cd;
+    border-color: #ffeeba;
 }
 
-/* Table container */
-.table-container {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.alert-info, .messages .info {
+    color: #0c5460;
+    background: #d1ecf1;
+    border-color: #bee5eb;
 }
 
-/* User avatar */
+/* ----------------------------------------
+   10. PAGINATION
+   ---------------------------------------- */
+.pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    border-radius: var(--radius-sm);
+    margin-top: var(--space-lg);
+    justify-content: center;
+}
+
+.page-link {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    margin-left: -1px;
+    color: var(--primary);
+    background: var(--white);
+    border: 1px solid var(--border);
+}
+
+.page-link:hover {
+    background: #e9ecef;
+    border-color: var(--border);
+}
+
+.page-item.active .page-link {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+.page-item.disabled .page-link {
+    color: var(--secondary);
+    pointer-events: none;
+    background: var(--white);
+}
+
+/* ----------------------------------------
+   11. USER AVATAR
+   ---------------------------------------- */
 .user-avatar {
     width: 32px;
     height: 32px;
@@ -97,14 +394,383 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--white);
     font-weight: bold;
     font-size: 14px;
+    background: var(--primary);
+    flex-shrink: 0;
 }
 
-/* Responsive */
-@media (max-width: 767px) {
-    .stat-card {
-        margin-bottom: 15px;
+/* ----------------------------------------
+   12. GRID SYSTEM
+   ---------------------------------------- */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+[class*="col-"] {
+    padding-right: 15px;
+    padding-left: 15px;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .col-md-3 { flex: 0 0 25%; max-width: 25%; }
+    .col-md-4 { flex: 0 0 33.333%; max-width: 33.333%; }
+    .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+    .col-md-8 { flex: 0 0 66.667%; max-width: 66.667%; }
+    .col-md-12 { flex: 0 0 100%; max-width: 100%; }
+}
+
+/* ----------------------------------------
+   13. UTILITIES
+   ---------------------------------------- */
+
+/* Spacing */
+.mt-3 { margin-top: var(--space-md); }
+.mt-4 { margin-top: var(--space-lg); }
+.mb-2 { margin-bottom: var(--space-sm); }
+.mb-3 { margin-bottom: var(--space-md); }
+.mb-4 { margin-bottom: var(--space-lg); }
+.me-2 { margin-right: var(--space-sm); }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.py-4 { padding-top: var(--space-lg); padding-bottom: var(--space-lg); }
+
+/* Flexbox */
+.d-flex { display: flex; }
+.flex-wrap { flex-wrap: wrap; }
+.align-items-center { align-items: center; }
+.justify-content-between { justify-content: space-between; }
+.justify-content-center { justify-content: center; }
+.gap-2 { gap: var(--space-sm); }
+.gap-3 { gap: var(--space-md); }
+
+/* Text */
+.text-center { text-align: center; }
+.text-muted { color: var(--secondary); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.small { font-size: 0.875rem; }
+
+/* Backgrounds */
+.bg-light { background: var(--light); }
+
+/* Borders */
+.rounded { border-radius: var(--radius-sm); }
+
+/* Icons */
+.fa-3x { font-size: 3rem; }
+
+/* Preformatted Text */
+pre {
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    font-family: inherit;
+}
+
+/* ----------------------------------------
+   14. COMPETITION PAGE SPECIFIC
+   ---------------------------------------- */
+
+/* Title Column */
+.table td:first-child {
+    max-width: 250px;
+}
+
+.table td:first-child div:first-child {
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+    color: var(--dark);
+}
+
+.table td:first-child small {
+    display: block;
+    color: var(--secondary);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* Deadline Column */
+.table td:nth-child(2) {
+    white-space: nowrap;
+}
+
+.table td:nth-child(2) div:first-child {
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+}
+
+.table td:nth-child(2) small {
+    color: var(--secondary);
+    font-size: 0.75rem;
+}
+
+/* Status Column */
+.table td:nth-child(3) .badge {
+    min-width: 70px;
+}
+
+/* Count Columns */
+.table td:nth-child(4) .badge,
+.table td:nth-child(5) .badge {
+    min-width: 40px;
+}
+
+/* Score Column */
+.table td:nth-child(6) {
+    min-width: 100px;
+}
+
+.table td:nth-child(6) .progress {
+    width: 80px;
+    margin-bottom: var(--space-xs);
+}
+
+.table td:nth-child(6) small {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Action Buttons Column */
+.table td:last-child .btn-group {
+    gap: var(--space-xs);
+}
+
+.table td:last-child .btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.table td:last-child .btn i {
+    margin-right: 4px;
+}
+
+/* ----------------------------------------
+   15. DASHBOARD SPECIFIC
+   ---------------------------------------- */
+canvas {
+    max-height: 300px;
+    width: 100% !important;
+}
+
+/* ----------------------------------------
+   16. FEEDBACK SPECIFIC
+   ---------------------------------------- */
+.bg-light.rounded {
+    background: var(--light);
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+}
+
+/* ----------------------------------------
+   17. EMPTY STATE
+   ---------------------------------------- */
+.text-center.py-4 {
+    padding: var(--space-xl) var(--space-lg);
+}
+
+.text-center.py-4 i {
+    opacity: 0.5;
+}
+
+.text-center.py-4 p {
+    color: var(--secondary);
+    margin-bottom: var(--space-lg);
+}
+
+/* ----------------------------------------
+   18. RESPONSIVE DESIGN
+   ---------------------------------------- */
+@media (max-width: 992px) {
+    .table-container {
+        overflow-x: auto;
     }
+    
+    .table {
+        min-width: 900px;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-container {
+        padding: var(--space-md);
+    }
+    
+    .stat-card {
+        margin-bottom: var(--space-md);
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .table td:first-child {
+        max-width: 200px;
+    }
+    
+    .table td:last-child .btn span {
+        display: none;
+    }
+    
+    .table td:last-child .btn i {
+        margin-right: 0;
+    }
+}
+
+/* ----------------------------------------
+   19. PRINT STYLES
+   ---------------------------------------- */
+@media print {
+    .sidebar,
+    .top-bar .user-info,
+    .btn,
+    .action-btn {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+    }
+    
+    .table-container {
+        box-shadow: none;
+        border: 1px solid var(--border);
+    }
+}
+
+/* Export buttons */
+.btn-file {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn i {
+    margin-right: 5px;
+}
+
+/* PDF specific */
+.btn-danger i {
+    color: white;
+}
+
+/* CSV specific */
+.btn-success i {
+    color: white;
+}
+
+/* Essay content styling */
+.essay-content {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 1.1rem;
+    line-height: 1.9;
+    color: #2c3e50;
+    background-color: #fff;
+}
+
+.essay-content p {
+    margin-bottom: 1.5rem;
+    text-align: justify;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.essay-content p:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.essay-content p:first-child {
+    margin-top: 0;
+}
+
+/* Progress bar styling */
+.progress {
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Card styling */
+.card {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+.card-header.bg-primary {
+    background-color: #007bff !important;
+    color: white;
+}
+
+.card-header.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Table styling */
+.table th {
+    width: 150px;
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Display score */
+.display-1 {
+    font-size: 4rem;
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+/* Action buttons */
+.btn-group {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.btn-group .btn {
+    margin: 2px;
+}
+
+.essay-paragraph {
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 0;
+    line-height: 1.8;
+    text-align: justify;
+    border-bottom: 1px solid #eee;
+}
+
+.essay-paragraph:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
 }

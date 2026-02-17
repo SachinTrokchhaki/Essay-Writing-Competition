@@ -35,6 +35,16 @@
             <button type="submit" class="btn btn-primary w-100">Filter</button>
         </div>
     </form>
+    
+    <!-- Export Buttons -->
+    <div class="mt-3 d-flex gap-2">
+        <a href="{% url 'custom_admin:export_essays_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+            <i class="fas fa-file-csv"></i> Export CSV
+        </a>
+        <a href="{% url 'custom_admin:export_essays_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> Export PDF
+        </a>
+    </div>
 </div>
 
 <!-- Essays List -->
@@ -81,19 +91,33 @@
                     <small class="text-muted">{{ essay.submitted_at|timesince }} ago</small>
                 </td>
                 <td>
-                    {% if essay.status == 'submitted' %}
-                    <a href="{% url 'admin:competition_essay_change' essay.id %}" target="_blank" class="action-btn" style="background: #28a745; color: white;">
-                        <i class="fas fa-check"></i> Review
-                    </a>
-                    {% endif %}
-                    <a href="{% url 'admin:competition_essay_change' essay.id %}" target="_blank" class="action-btn" style="background: #007bff; color: white;">
-                        <i class="fas fa-eye"></i> View
-                    </a>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'custom_admin:essay_detail' essay.id %}" class="btn btn-sm btn-info" title="View">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if essay.status == 'submitted' %}
+                        <a href="{% url 'custom_admin:essay_review' essay.id %}" class="btn btn-sm btn-success" title="Review">
+                            <i class="fas fa-check"></i>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'custom_admin:essay_edit' essay.id %}" class="btn btn-sm btn-warning" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'custom_admin:essay_delete' essay.id %}" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Are you sure?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                        <a href="{% url 'custom_admin:export_essay_detail_pdf' essay.id %}" class="btn btn-sm btn-secondary" title="Download PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                    </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center">No essays found</td>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p>No essays found</p>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

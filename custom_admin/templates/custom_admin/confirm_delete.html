@@ -1,0 +1,30 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Confirm Delete{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="table-container text-center">
+            <div class="mb-4">
+                <i class="fas fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+            </div>
+            
+            <h4 class="mb-3">Are you sure?</h4>
+            
+            <p class="mb-4">
+                You are about to delete this {{ type }}: <strong>{{ object }}</strong><br>
+                <small class="text-danger">This action cannot be undone!</small>
+            </p>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="javascript:history.back()" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

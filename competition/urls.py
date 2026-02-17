@@ -17,8 +17,8 @@ urlpatterns = [
     path('leaderboard/', views.leaderboard, name='leaderboard'),
     path('leaderboard/<int:pk>/', views.leaderboard, name='leaderboard_detail'),
     
-    path('my-results/', views.my_results, name='my_results'),
-    path('result/<int:pk>/', views.essay_result_detail, name='essay_result'),
+    # path('my-results/', views.my_results, name='my_results'),
+    # path('result/<int:pk>/', views.essay_result_detail, name='essay_result'),
     
     # Admin URLs
     path('admin/evaluate/<int:pk>/', views.evaluate_essay, name='admin_evaluate'),

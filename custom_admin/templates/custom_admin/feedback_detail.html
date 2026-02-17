@@ -1,0 +1,141 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Feedback Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4>Feedback from {{ feedback.name }}</h4>
+                <span class="badge badge-{{ feedback.status }}" style="font-size: 1rem;">
+                    {{ feedback.get_status_display }}
+                </span>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-user"></i> User Information
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <th style="width: 150px;">Name:</th>
+                            <td>{{ feedback.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Email:</th>
+                            <td>
+                                <a href="mailto:{{ feedback.email }}">{{ feedback.email }}</a>
+                            </td>
+                        </tr>
+                        {% if feedback.user %}
+                        <tr>
+                            <th>Registered User:</th>
+                            <td>
+                                <a href="{% url 'custom_admin:user_detail' feedback.user.id %}">
+                                    {{ feedback.user.username }}
+                                </a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Submitted:</th>
+                            <td>{{ feedback.created_at|date:"F d, Y H:i" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-comment"></i> Feedback Message
+                </div>
+                <div class="card-body">
+                    <div class="p-3 bg-light rounded">
+                        {{ feedback.message|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            
+            {% if feedback.admin_reply %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-reply"></i> Admin Reply
+                </div>
+                <div class="card-body">
+                    <div class="p-3 bg-light rounded">
+                        {{ feedback.admin_reply|linebreaks }}
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        Replied on {{ feedback.replied_at|date:"F d, Y H:i" }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-cog"></i> Settings
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                <span class="badge badge-{{ feedback.status }}">
+                                    {{ feedback.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Show on Homepage:</strong>
+                                {% if feedback.show_on_homepage %}
+                                    <span class="badge badge-success">Yes</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">No</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'custom_admin:feedback' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Feedback
+                </a>
+                <div>
+                    {% if not feedback.has_reply %}
+                    <a href="{% url 'custom_admin:feedback_reply' feedback.id %}" class="btn btn-success">
+                        <i class="fas fa-reply"></i> Reply
+                    </a>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'custom_admin:feedback' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="feedback_id" value="{{ feedback.id }}">
+                        
+                        {% if feedback.status != 'approved' %}
+                        <button type="submit" name="action" value="approve" class="btn btn-success">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        {% endif %}
+                        
+                        {% if feedback.status != 'rejected' %}
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                        {% endif %}
+                        
+                        {% if not feedback.show_on_homepage %}
+                        <button type="submit" name="action" value="feature" class="btn btn-warning">
+                            <i class="fas fa-star"></i> Feature
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

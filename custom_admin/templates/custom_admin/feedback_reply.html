@@ -1,0 +1,45 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Reply to Feedback{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="table-container">
+            <h4 class="mb-4">Reply to {{ feedback.name }}</h4>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-comment"></i> Original Feedback
+                </div>
+                <div class="card-body">
+                    <p><strong>From:</strong> {{ feedback.name }} ({{ feedback.email }})</p>
+                    <p><strong>Received:</strong> {{ feedback.created_at|date:"F d, Y H:i" }}</p>
+                    <div class="p-3 bg-light rounded mt-3">
+                        {{ feedback.message|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="admin_reply" class="form-label">Your Reply</label>
+                    <textarea name="admin_reply" id="admin_reply" class="form-control" rows="6" placeholder="Write your reply here..."></textarea>
+                    <div class="form-text">This reply will be visible to the user and on the homepage.</div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'custom_admin:feedback' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Send Reply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

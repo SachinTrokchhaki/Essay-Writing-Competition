@@ -1,0 +1,122 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}User Details: {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="table-container">
+            <div class="text-center mb-4">
+                <div class="user-avatar mx-auto" style="width: 100px; height: 100px; background: #007bff; font-size: 3rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 15px;">
+                    {{ user.username|make_list|first|upper }}
+                </div>
+                <h4>{{ user.username }}</h4>
+                <p class="text-muted">{{ user.email }}</p>
+            </div>
+            
+            <table class="table">
+                <tr>
+                    <th>Full Name:</th>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                </tr>
+                <tr>
+                    <th>Date of Birth:</th>
+                    <td>{{ user.DOB|date:"M d, Y"|default:"-" }}</td>
+                </tr>
+                <tr>
+                    <th>Joined:</th>
+                    <td>{{ user.created_at|date:"M d, Y" }}</td>
+                </tr>
+                <tr>
+                    <th>Last Login:</th>
+                    <td>{{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</td>
+                </tr>
+                <tr>
+                    <th>Status:</th>
+                    <td>
+                        {% if user.is_active %}
+                            <span class="badge badge-success">Active</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Role:</th>
+                    <td>
+                        {% if user.is_superuser %}
+                            <span class="badge badge-warning">Superuser</span>
+                        {% elif user.is_staff %}
+                            <span class="badge badge-info">Staff</span>
+                        {% else %}
+                            <span class="badge badge-secondary">User</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+            
+            <div class="d-flex justify-content-between mt-3">
+                <a href="{% url 'custom_admin:users' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                <div>
+                    <a href="{% url 'custom_admin:user_edit' user.id %}" class="btn btn-success">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'custom_admin:user_delete' user.id %}" class="btn btn-danger" onclick="return confirm('Are you sure?')">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="table-container">
+            <h5>User Essays</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Competition</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for essay in essays %}
+                    <tr>
+                        <td>{{ essay.title|truncatechars:30 }}</td>
+                        <td>{{ essay.competition.title|truncatechars:20 }}</td>
+                        <td>
+                            <span class="badge badge-{{ essay.status }}">
+                                {{ essay.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if essay.total_score %}
+                                {{ essay.total_score|floatformat:1 }}%
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ essay.submitted_at|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="{% url 'custom_admin:essay_detail' essay.id %}" class="action-btn" style="background: #17a2b8; color: white;">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No essays found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
