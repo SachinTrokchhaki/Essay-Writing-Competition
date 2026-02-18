@@ -936,12 +936,37 @@ def user_detail(request, pk):
 @user_passes_test(is_admin, login_url='custom_admin:login')
 def user_edit(request, pk):
     user = get_object_or_404(CustomUser, pk=pk)
+    old_doc_path = None
+    
+    # Store the old document path before any changes
+    if user.identity_doc:
+        old_doc_path = user.identity_doc.path
+    
     if request.method == 'POST':
-        form = CustomUserForm(request.POST, instance=user)
+        # Create form with both POST and FILES data
+        form = CustomUserForm(request.POST, request.FILES, instance=user)
+        
         if form.is_valid():
-            form.save()
+            # Save the form first - this handles the new file upload
+            updated_user = form.save()
+            
+            # After successful save, delete the old file if it was replaced
+            if 'identity_doc' in request.FILES and old_doc_path:
+                try:
+                    # Check if the old file exists and is different from the new one
+                    import os
+                    if os.path.exists(old_doc_path):
+                        os.remove(old_doc_path)
+                except Exception as e:
+                    # Log the error but don't stop the process
+                    print(f"Error deleting old file: {e}")
+            
             messages.success(request, 'User updated successfully!')
             return redirect('custom_admin:users')
+        else:
+            # Print form errors for debugging
+            print("Form errors:", form.errors)
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomUserForm(instance=user)
     
@@ -955,6 +980,9 @@ def user_edit(request, pk):
 def user_delete(request, pk):
     user = get_object_or_404(CustomUser, pk=pk)
     if request.method == 'POST':
+        # Delete the document file if exists
+        if user.identity_doc:
+            user.identity_doc.delete(save=False)
         user.delete()
         messages.success(request, 'User deleted successfully!')
         return redirect('custom_admin:users')
@@ -968,13 +996,20 @@ def user_delete(request, pk):
 @user_passes_test(is_admin, login_url='custom_admin:login')
 def user_add(request):
     if request.method == 'POST':
-        form = CustomUserForm(request.POST)
+        # Create form with both POST and FILES data
+        form = CustomUserForm(request.POST, request.FILES)
+        
         if form.is_valid():
+            # Save the form - this handles the file upload automatically
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password'])
             user.save()
+            
             messages.success(request, 'User added successfully!')
             return redirect('custom_admin:users')
+        else:
+            print("Form errors:", form.errors)
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = CustomUserForm()
     
@@ -982,7 +1017,6 @@ def user_add(request):
         'form': form,
         'title': 'Add User'
     })
-
 
 # ========== FEEDBACK CRUD ==========
 @login_required(login_url='custom_admin:login')

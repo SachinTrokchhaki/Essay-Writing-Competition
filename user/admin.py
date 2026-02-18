@@ -8,7 +8,7 @@ User = get_user_model()
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('username', 'DOB', 'is_staff', 'is_active', 'is_superuser')
+    list_display = ('username', 'dob', 'is_staff', 'is_active', 'is_superuser')
     list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups')
     search_fields = ('username',)
     ordering = ('username',)
@@ -16,7 +16,7 @@ class UserAdmin(BaseUserAdmin):
 
     # Fields for editing a user
     fieldsets = (
-        (None, {'fields': ('username', 'password', 'identydoc', 'DOB')}),
+        (None, {'fields': ('username', 'password', 'identity_doc', 'dob')}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         (_('Important dates'), {'fields': ('last_login',)}),  # remove non-editable fields
     )
@@ -25,6 +25,6 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username', 'password1', 'password2', 'identydoc', 'DOB', 'is_active', 'is_staff', 'is_superuser'),
+            'fields': ('username', 'password1', 'password2', 'identity_doc', 'dob', 'is_active', 'is_staff', 'is_superuser'),
         }),
     )

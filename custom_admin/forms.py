@@ -1,3 +1,4 @@
+# custom_admin/forms.py
 from django import forms
 from competition.models import EssayCompetition, Essay
 from core.models import Feedback
@@ -42,19 +43,23 @@ class FeedbackForm(forms.ModelForm):
         }
 
 class CustomUserForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}), required=False)
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}), 
+        required=False,
+        help_text="Leave empty to keep current password"
+    )
     
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'first_name', 'last_name', 'DOB', 'identydoc', 
+        fields = ['username', 'email', 'first_name', 'last_name', 'dob', 'identity_doc', 
                   'is_active', 'is_staff', 'is_superuser']
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'DOB': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'identydoc': forms.FileInput(attrs={'class': 'form-control'}),
+            'dob': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'identity_doc': forms.FileInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_staff': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_superuser': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -65,7 +70,15 @@ class CustomUserForm(forms.ModelForm):
         password = self.cleaned_data.get('password')
         if password:
             user.set_password(password)
+        
+        # Handle file upload
+        if self.cleaned_data.get('identity_doc'):
+            # If there's an existing file and we're uploading a new one,
+            # the old file will be automatically deleted by Django
+            user.identity_doc = self.cleaned_data['identity_doc']
+        
         if commit:
             user.save()
         return user
+
 

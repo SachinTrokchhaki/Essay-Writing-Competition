@@ -1,10 +1,11 @@
+# user/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from django.db.models import Q
+from django.http import JsonResponse
 import datetime
+import re
 from .forms import UserLoginForm, UserRegisterForm, UserUpdateForm
 from competition.models import Essay, EssayCompetition
 
@@ -41,22 +42,88 @@ def register(request):
         return redirect('core:home')
 
     if request.method == "POST":
-        form = UserRegisterForm(request.POST)
+        form = UserRegisterForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password1'])
+            
+            # Save additional fields
+            if form.cleaned_data.get('identity_doc'):
+                user.identity_doc = form.cleaned_data['identity_doc']
+            if form.cleaned_data.get('dob'):
+                user.dob = form.cleaned_data['dob']
+                
             user.save()
             
-            # Ensure profile is created
+            # Create profile
             from .models import UserProfile
             UserProfile.objects.get_or_create(user=user)
 
-            messages.success(request, "Account created successfully. Please login.")
+            messages.success(request, "✅ Account created successfully! Please login.")
             return redirect('user:login')
+        else:
+            # Collect all errors for display
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_messages.append(f"{field}: {error}")
+            
+            # Show first error as message
+            if error_messages:
+                messages.error(request, error_messages[0])
     else:
         form = UserRegisterForm()
 
     return render(request, 'user/register.html', {'form': form})
+
+
+# ---------- CHECK USERNAME AVAILABILITY ----------
+def check_username(request):
+    """AJAX endpoint to check if username is available"""
+    username = request.GET.get('username', '').strip()
+    
+    if not username:
+        return JsonResponse({'available': False, 'error': 'Username required'})
+    
+    # Validate length
+    if len(username) < 3:
+        return JsonResponse({'available': False, 'error': 'Too short (min 3 chars)'})
+    
+    if len(username) > 20:
+        return JsonResponse({'available': False, 'error': 'Too long (max 20 chars)'})
+    
+    # Validate characters
+    if not re.match(r'^[a-zA-Z0-9_]+$', username):
+        return JsonResponse({'available': False, 'error': 'Invalid characters'})
+    
+    # Check if exists
+    exists = User.objects.filter(username=username).exists()
+    
+    if exists:
+        return JsonResponse({'available': False, 'error': 'Username taken'})
+    
+    return JsonResponse({'available': True, 'error': None})
+
+
+# ---------- CHECK EMAIL AVAILABILITY ----------
+def check_email(request):
+    """AJAX endpoint to check if email is available"""
+    email = request.GET.get('email', '').strip()
+    
+    if not email:
+        return JsonResponse({'available': False, 'error': 'Email required'})
+    
+    # Basic email format
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+        return JsonResponse({'available': False, 'error': 'Invalid email format'})
+    
+    # Check if exists
+    exists = User.objects.filter(email=email).exists()
+    
+    if exists:
+        return JsonResponse({'available': False, 'error': 'Email already registered'})
+    
+    return JsonResponse({'available': True, 'error': None})
 
 
 # ---------- LOGOUT ----------
@@ -67,7 +134,7 @@ def logout_view(request):
     return redirect('user:login')
 
 
-# ---------- PROFILE VIEWS ----------
+# ---------- MY PROFILE (DASHBOARD) ----------
 @login_required
 def my_profile(request):
     user = request.user
@@ -81,10 +148,7 @@ def my_profile(request):
         total_submissions = user_essays.count()
         draft_count = user_essays.filter(status='draft').count()
         submitted_count = user_essays.filter(status='submitted').count()
-        
-        # FIX: Use 'submitted' for pending_count since template uses it
-        pending_count = user_essays.filter(status='submitted').count()  # Changed from 'pending_review'
-        
+        pending_count = user_essays.filter(status='submitted').count()
         accepted_count = user_essays.filter(status='accepted').count()
         rejected_count = user_essays.filter(status='rejected').count()
         
@@ -113,7 +177,7 @@ def my_profile(request):
         
         # Get competitions where user has accepted essays for leaderboards
         user_competitions_with_leaderboards = EssayCompetition.objects.filter(
-            essays__user=user,  # FIX: Changed from 'essay__user' to 'essays__user'
+            essays__user=user,
             essays__status='accepted'
         ).distinct()
         
@@ -137,7 +201,7 @@ def my_profile(request):
         'total_submissions': total_submissions,
         'draft_count': draft_count,
         'submitted_count': submitted_count,
-        'pending_count': pending_count,  # Now using submitted count
+        'pending_count': pending_count,
         'accepted_count': accepted_count,
         'rejected_count': rejected_count,
         'success_rate': success_rate,
@@ -149,6 +213,7 @@ def my_profile(request):
     return render(request, 'user/profile.html', context)
 
 
+# ---------- EDIT PROFILE ----------
 @login_required
 def edit_profile(request):
     user = request.user
@@ -167,6 +232,7 @@ def edit_profile(request):
     return render(request, 'user/edit_profile.html', context)
 
 
+# ---------- MY ESSAYS ----------
 @login_required
 def my_essays(request):
     try:
@@ -175,7 +241,7 @@ def my_essays(request):
         
         # Separate by status using utility-like filtering
         submitted_essays = all_essays.filter(
-            status__in=['submitted', 'pending_review', 'accepted']
+            status__in=['submitted', 'accepted']
         ).order_by('-submitted_at')
         
         rejected_essays = all_essays.filter(status='rejected').order_by('-updated_at')
@@ -189,7 +255,7 @@ def my_essays(request):
             'rejected_essays': rejected_essays,
             'saved_drafts': saved_drafts,
             'total_count': all_essays.count(),
-            'accepted_essays_count': accepted_essays_count,  # Add this
+            'accepted_essays_count': accepted_essays_count,
         }
     except Exception as e:
         print(f"Error in my_essays: {e}")
@@ -198,13 +264,24 @@ def my_essays(request):
             'rejected_essays': [],
             'saved_drafts': [],
             'total_count': 0,
-            'accepted_essays_count': 0,  # Add this
+            'accepted_essays_count': 0,
         }
     
     return render(request, 'user/my_essays.html', context)
 
 
-# Utility function to get user essay statistics
+# ---------- DELETE ESSAY ----------
+@login_required
+def delete_essay(request, pk):
+    essay = get_object_or_404(Essay, pk=pk, user=request.user)
+    if request.method == 'POST':
+        essay.delete()
+        messages.success(request, 'Essay deleted successfully.')
+        return redirect('user:my_essays')
+    return redirect('user:my_essays')
+
+
+# ---------- UTILITY FUNCTION ----------
 def get_user_essay_stats(user):
     """Get statistics about user's essays"""
     from competition.models import Essay
@@ -215,7 +292,7 @@ def get_user_essay_stats(user):
         'total': essays.count(),
         'drafts': essays.filter(status='draft').count(),
         'submitted': essays.filter(status='submitted').count(),
-        'pending': essays.filter(status='pending_review').count(),
+        'pending': essays.filter(status='submitted').count(),
         'accepted': essays.filter(status='accepted').count(),
         'rejected': essays.filter(status='rejected').count(),
     }
@@ -224,16 +301,4 @@ def get_user_essay_stats(user):
     total_reviewed = stats['accepted'] + stats['rejected']
     stats['success_rate'] = (stats['accepted'] / total_reviewed * 100) if total_reviewed > 0 else 0
     
-    return stats  # Important: return the stats dictionary
-
-
-@login_required
-def delete_essay(request, pk):
-    from django.shortcuts import get_object_or_404
-    essay = get_object_or_404(Essay, pk=pk, user=request.user)
-    if request.method == 'POST':
-        essay.delete()
-        messages.success(request, 'Essay deleted successfully.')
-        return redirect('user:my_essays')
-    return redirect('user:my_essays')
-
+    return stats

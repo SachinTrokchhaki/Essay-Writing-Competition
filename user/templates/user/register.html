@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-md-10 col-lg-8">
             <div class="card shadow-lg border-0">
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
@@ -13,189 +13,310 @@
                         <p class="text-muted">Join our community of writers</p>
                     </div>
 
-                    <!-- Show general errors if any -->
-                    {% if general_errors %}
-                    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-                        {% for error in general_errors %}
-                        <div>{{ error }}</div>
+                    <!-- Messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4" role="alert">
+                                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
                         {% endfor %}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
                     {% endif %}
 
-                    <form method="post" novalidate>
+                    <!-- Form Errors Summary -->
+                    {% if form.errors %}
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Please fix the following errors:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ field|title }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" id="registerForm" novalidate>
                         {% csrf_token %}
 
-                        <!-- First Name -->
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label">First Name *</label>
-                                <input type="text" 
-                                       class="form-control {% if field_errors.first_name %}is-invalid{% endif %}" 
-                                       id="first_name" 
-                                       name="first_name" 
-                                       value="{{ first_name|default_if_none:'' }}"
-                                       required>
-                                {% if field_errors.first_name %}
-                                <div class="invalid-feedback">
-                                    <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.first_name }}
+                        <!-- Personal Information -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="fas fa-user-circle text-primary me-2"></i>
+                                    Personal Information
+                                </h5>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="first_name" class="form-label">
+                                            First Name <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                               id="first_name" 
+                                               name="first_name" 
+                                               value="{{ form.first_name.value|default:'' }}"
+                                               placeholder="Enter first name"
+                                               required>
+                                        <div class="invalid-feedback" id="first_name_feedback">
+                                            {% if form.first_name.errors %}
+                                                {{ form.first_name.errors.0 }}
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">Letters and spaces only, min 2 characters</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="last_name" class="form-label">
+                                            Last Name <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="text" 
+                                               class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                               id="last_name" 
+                                               name="last_name"
+                                               value="{{ form.last_name.value|default:'' }}"
+                                               placeholder="Enter last name"
+                                               required>
+                                        <div class="invalid-feedback" id="last_name_feedback">
+                                            {% if form.last_name.errors %}
+                                                {{ form.last_name.errors.0 }}
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">Letters and spaces only, min 2 characters</small>
+                                    </div>
                                 </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Last Name -->
-                            <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label">Last Name *</label>
-                                <input type="text" 
-                                       class="form-control {% if field_errors.last_name %}is-invalid{% endif %}" 
-                                       id="last_name" 
-                                       name="last_name"
-                                       value="{{ last_name|default_if_none:'' }}"
-                                       required>
-                                {% if field_errors.last_name %}
-                                <div class="invalid-feedback">
-                                    <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.last_name }}
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="dob" class="form-label">
+                                            Date of Birth <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="date" 
+                                               class="form-control {% if form.dob.errors %}is-invalid{% endif %}" 
+                                               id="dob" 
+                                               name="dob"
+                                               value="{{ form.dob.value|date:'Y-m-d'|default:'' }}"
+                                               max="2008-12-31"
+                                               required>
+                                        <div class="invalid-feedback" id="dob_feedback">
+                                            {% if form.dob.errors %}
+                                                {{ form.dob.errors.0 }}
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">You must be at least 16 years old</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="country" class="form-label">
+                                            Country <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select {% if form.country.errors %}is-invalid{% endif %}" 
+                                                id="country" 
+                                                name="country" 
+                                                required>
+                                            <option value="">Select Country</option>
+                                            <option value="US" {% if form.country.value == "US" %}selected{% endif %}>United States</option>
+                                            <option value="UK" {% if form.country.value == "UK" %}selected{% endif %}>United Kingdom</option>
+                                            <option value="CA" {% if form.country.value == "CA" %}selected{% endif %}>Canada</option>
+                                            <option value="AU" {% if form.country.value == "AU" %}selected{% endif %}>Australia</option>
+                                            <option value="IN" {% if form.country.value == "IN" %}selected{% endif %}>India</option>
+                                            <option value="NP" {% if form.country.value == "NP" %}selected{% endif %}>Nepal</option>
+                                            <option value="other" {% if form.country.value == "other" %}selected{% endif %}>Other</option>
+                                        </select>
+                                        <div class="invalid-feedback">
+                                            {% if form.country.errors %}
+                                                {{ form.country.errors.0 }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
-                                {% endif %}
                             </div>
                         </div>
 
-                        <!-- Email -->
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email Address *</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                <input type="email" 
-                                       class="form-control {% if field_errors.email %}is-invalid{% endif %}" 
-                                       id="email" 
-                                       name="email"
-                                       placeholder="your.email@example.com"
-                                       value="{{ email|default_if_none:'' }}"
-                                       required>
+                        <!-- Account Information -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="fas fa-lock text-primary me-2"></i>
+                                    Account Information
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">
+                                        Email Address <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        <input type="email" 
+                                               class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                               id="email" 
+                                               name="email"
+                                               placeholder="your.email@example.com"
+                                               value="{{ form.email.value|default:'' }}"
+                                               required>
+                                    </div>
+                                    <div class="invalid-feedback" id="email_feedback">
+                                        {% if form.email.errors %}
+                                            {{ form.email.errors.0 }}
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted" id="email_hint">We'll never share your email</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">
+                                        Username <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        <input type="text" 
+                                               class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                                               id="username" 
+                                               name="username"
+                                               placeholder="Choose a username"
+                                               value="{{ form.username.value|default:'' }}"
+                                               required>
+                                    </div>
+                                    <div id="username_feedback" class="mt-1">
+                                        {% if form.username.errors %}
+                                            <small class="text-danger">{{ form.username.errors.0 }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">3-20 characters, letters, numbers, underscores only</small>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="password1" class="form-label">
+                                            Password <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                            <input type="password" 
+                                                   class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                                                   id="password1" 
+                                                   name="password1"
+                                                   placeholder="Enter password"
+                                                   required>
+                                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password1">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div class="password-strength-meter mt-2"></div>
+                                        <div id="password1_feedback" class="mt-1">
+                                            {% if form.password1.errors %}
+                                                <small class="text-danger">{{ form.password1.errors.0 }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">8+ chars, uppercase, lowercase, number, special char</small>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="password2" class="form-label">
+                                            Confirm Password <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                            <input type="password" 
+                                                   class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                                   id="password2" 
+                                                   name="password2"
+                                                   placeholder="Confirm password"
+                                                   required>
+                                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="password2">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <div id="password2_feedback" class="mt-1">
+                                            {% if form.password2.errors %}
+                                                <small class="text-danger">{{ form.password2.errors.0 }}</small>
+                                            {% endif %}
+                                        </div>
+                                        <div id="password_match_feedback" class="mt-1"></div>
+                                    </div>
+                                </div>
                             </div>
-                            {% if field_errors.email %}
-                            <div class="invalid-feedback d-block">
-                                <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.email }}
-                            </div>
-                            {% endif %}
                         </div>
 
-                        <!-- Username -->
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username *</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" 
-                                       class="form-control {% if field_errors.username %}is-invalid{% endif %}" 
-                                       id="username" 
-                                       name="username"
-                                       placeholder="Choose a username (3+ characters, letters/numbers/_ only)"
-                                       value="{{ username|default_if_none:'' }}"
-                                       required>
-                            </div>
-                            <small class="text-muted">Minimum 3 characters, letters, numbers, and underscores only</small>
-                            {% if field_errors.username %}
-                            <div class="invalid-feedback d-block">
-                                <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.username }}
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- Password -->
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="password1" class="form-label">Password *</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                    <input type="password" 
-                                           class="form-control {% if field_errors.password1 %}is-invalid{% endif %}" 
-                                           id="password1" 
-                                           name="password1"
-                                           placeholder="Minimum 8 characters"
-                                           required>
+                        <!-- Document Upload -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">
+                                    <i class="fas fa-id-card text-primary me-2"></i>
+                                    Identity Verification
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="identity_doc" class="form-label">
+                                        Identity Document <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="upload-area" id="uploadArea">
+                                        <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-primary"></i>
+                                        <p class="mb-2">Drag & drop your document here or click to browse</p>
+                                        <p class="small text-muted mb-2">Supported: PDF, JPG, JPEG, PNG (Max 5MB)</p>
+                                        <input type="file" 
+                                               class="d-none" 
+                                               id="identity_doc" 
+                                               name="identity_doc"
+                                               accept=".pdf,.jpg,.jpeg,.png"
+                                               required>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="browseBtn">
+                                            <i class="fas fa-folder-open me-2"></i>Browse Files
+                                        </button>
+                                    </div>
+                                    <div id="file_feedback" class="mt-2">
+                                        {% if form.identity_doc.errors %}
+                                            <small class="text-danger">{{ form.identity_doc.errors.0 }}</small>
+                                        {% endif %}
+                                    </div>
                                 </div>
-                                <small class="text-muted">At least 8 characters</small>
-                                {% if field_errors.password1 %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.password1 }}
-                                </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Confirm Password -->
-                            <div class="col-md-6 mb-3">
-                                <label for="password2" class="form-label">Confirm Password *</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                    <input type="password" 
-                                           class="form-control {% if field_errors.password2 %}is-invalid{% endif %}" 
-                                           id="password2" 
-                                           name="password2"
-                                           placeholder="Confirm your password"
-                                           required>
-                                </div>
-                                {% if field_errors.password2 %}
-                                <div class="invalid-feedback d-block">
-                                    <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.password2 }}
-                                </div>
-                                {% endif %}
                             </div>
                         </div>
 
-                        <!-- Country -->
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="country" class="form-label">Country *</label>
-                                <select class="form-select {% if field_errors.country %}is-invalid{% endif %}" 
-                                        id="country" 
-                                        name="country" 
-                                        required>
-                                    <option value="">Select Country</option>
-                                    <option value="US" {% if country == "US" %}selected{% endif %}>United States</option>
-                                    <option value="UK" {% if country == "UK" %}selected{% endif %}>United Kingdom</option>
-                                    <option value="CA" {% if country == "CA" %}selected{% endif %}>Canada</option>
-                                    <option value="AU" {% if country == "AU" %}selected{% endif %}>Australia</option>
-                                    <option value="IN" {% if country == "IN" %}selected{% endif %}>India</option>
-                                    <option value="NP" {% if country == "NP" %}selected{% endif %}>Nepal</option>
-                                    <option value="other" {% if country == "other" %}selected{% endif %}>Other</option>
-                                </select>
-                                {% if field_errors.country %}
-                                <div class="invalid-feedback">
-                                    <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.country }}
-                                </div>
-                                {% endif %}
-                            </div>  
-                        </div>
-
-                        <!-- Terms and Conditions -->
-                        <div class="mb-3 form-check">
+                        <!-- Terms -->
+                        <div class="mb-4 form-check">
                             <input type="checkbox" 
-                                   class="form-check-input {% if field_errors.terms %}is-invalid{% endif %}" 
+                                   class="form-check-input {% if form.terms.errors %}is-invalid{% endif %}" 
                                    id="terms" 
-                                   name="terms" 
+                                   name="terms"
+                                   {% if form.terms.value %}checked{% endif %}
                                    required>
                             <label class="form-check-label" for="terms">
-                                I agree to the <a href="#">Terms & Conditions</a> and <a href="#">Privacy Policy</a>
+                                I agree to the <a href="#" target="_blank">Terms & Conditions</a> and 
+                                <a href="#" target="_blank">Privacy Policy</a> <span class="text-danger">*</span>
                             </label>
-                            {% if field_errors.terms %}
-                            <div class="invalid-feedback d-block">
-                                <i class="fas fa-exclamation-circle me-1"></i> {{ field_errors.terms }}
+                            <div class="invalid-feedback">
+                                {% if form.terms.errors %}
+                                    {{ form.terms.errors.0 }}
+                                {% endif %}
                             </div>
-                            {% endif %}
                         </div>
 
-                        <!-- Submit Button -->
+                        <!-- Submit -->
                         <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-user-plus"></i> Create Account
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
                             </button>
+                        </div>
+
+                        <!-- Loading Spinner -->
+                        <div id="loadingSpinner" class="text-center d-none">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Creating your account...</p>
                         </div>
                     </form>
 
                     <hr class="my-4">
 
                     <div class="text-center">
-                        <p class="mb-0">Already have an account? <a href="{% url 'user:login'%}"><u>Login here</u></a></p>
+                        <p class="mb-0">Already have an account? <a href="{% url 'user:login' %}" class="text-primary"><u>Login here</u></a></p>
                     </div>
                 </div>
             </div>
@@ -204,34 +325,385 @@
 </div>
 
 <style>
-    .card {
-        border-radius: 15px;
-    }
-    .input-group-text {
-        background-color: #f8f9fa;
-    }
+    .card { border-radius: 15px; overflow: hidden; }
+    .input-group-text { background-color: #f8f9fa; border-right: none; }
+    .input-group .form-control { border-left: none; }
+    .input-group .form-control:focus { border-left: none; box-shadow: none; }
+    
     .btn-primary {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
+        transition: all 0.3s ease;
     }
     .btn-primary:hover {
         background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
     }
-    .alert {
+    .btn-primary:disabled { background: #ccc; transform: none; box-shadow: none; }
+    
+    .is-invalid { border-color: #dc3545; }
+    .is-invalid:focus { border-color: #dc3545; box-shadow: 0 0 0 0.25rem rgba(220,53,69,0.25); }
+    .invalid-feedback { display: block !important; color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem; }
+    
+    .upload-area {
+        border: 2px dashed #dee2e6;
         border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s ease;
     }
-    .is-invalid {
-        border-color: #dc3545;
+    .upload-area:hover { border-color: #667eea; background: #f0f2f5; }
+    .upload-area.highlight { border-color: #28a745; background: #e8f5e9; }
+    .upload-area.file-selected { border-color: #667eea; background: #e8eaf6; }
+    
+    .password-strength-meter {
+        height: 5px;
+        border-radius: 3px;
+        background: #e9ecef;
+        margin-top: 5px;
+        position: relative;
+        overflow: hidden;
     }
-    .is-invalid:focus {
-        border-color: #dc3545;
-        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+    .password-strength-meter::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 0;
+        transition: width 0.3s ease;
     }
-    .invalid-feedback {
-        display: block !important;
-        color: #dc3545;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
+    .password-strength-weak::before { background-color: #dc3545; width: 25%; }
+    .password-strength-fair::before { background-color: #ffc107; width: 50%; }
+    .password-strength-good::before { background-color: #28a745; width: 75%; }
+    .password-strength-strong::before { background-color: #20c997; width: 100%; }
+    
+    @keyframes shake {
+        0%,100%{transform:translateX(0)} 10%,30%,50%,70%,90%{transform:translateX(-5px)}
+        20%,40%,60%,80%{transform:translateX(5px)}
     }
+    .shake { animation: shake 0.5s ease-in-out; }
+    .bg-light { background-color: #f8f9fa !important; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    
+    // Toggle password visibility
+    document.querySelectorAll('.toggle-password').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    });
+    
+    // Password strength meter
+    const password1 = document.getElementById('password1');
+    const password2 = document.getElementById('password2');
+    const strengthMeter = document.querySelector('.password-strength-meter');
+    
+    if (password1) {
+        password1.addEventListener('input', function() {
+            const strength = checkPasswordStrength(this.value);
+            updatePasswordStrength(strength);
+            validatePassword(this.value);
+            if (password2.value) checkPasswordMatch();
+        });
+    }
+    
+    if (password2) {
+        password2.addEventListener('input', checkPasswordMatch);
+    }
+    
+    function checkPasswordStrength(password) {
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (password.length >= 12) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^a-zA-Z0-9]/.test(password)) score++;
+        
+        if (score <= 2) return 'weak';
+        if (score <= 3) return 'fair';
+        if (score <= 4) return 'good';
+        return 'strong';
+    }
+    
+    function updatePasswordStrength(strength) {
+        strengthMeter.className = 'password-strength-meter password-strength-' + strength;
+    }
+    
+    function validatePassword(password) {
+        const feedback = document.getElementById('password1_feedback');
+        const errors = [];
+        
+        if (password.length < 8) errors.push('Minimum 8 characters');
+        if (!/[A-Z]/.test(password)) errors.push('Uppercase letter required');
+        if (!/[a-z]/.test(password)) errors.push('Lowercase letter required');
+        if (!/[0-9]/.test(password)) errors.push('Number required');
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) errors.push('Special character required');
+        
+        if (errors.length > 0) {
+            feedback.innerHTML = '<small class="text-danger">' + errors.join(', ') + '</small>';
+        } else {
+            feedback.innerHTML = '<small class="text-success">✓ Strong password</small>';
+        }
+    }
+    
+    function checkPasswordMatch() {
+        const feedback = document.getElementById('password_match_feedback');
+        if (password1.value && password2.value) {
+            if (password1.value === password2.value) {
+                feedback.innerHTML = '<small class="text-success"><i class="fas fa-check-circle me-1"></i>Passwords match</small>';
+                password2.classList.remove('is-invalid');
+            } else {
+                feedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Passwords do not match</small>';
+                password2.classList.add('is-invalid');
+            }
+        } else {
+            feedback.innerHTML = '';
+        }
+    }
+    
+    // Username availability check
+    const username = document.getElementById('username');
+    const usernameFeedback = document.getElementById('username_feedback');
+    let usernameTimeout;
+    
+    if (username) {
+        username.addEventListener('input', function() {
+            clearTimeout(usernameTimeout);
+            const value = this.value;
+            
+            // Basic validation
+            if (value.length < 3) {
+                usernameFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Too short (min 3 chars)</small>';
+                return;
+            }
+            if (value.length > 20) {
+                usernameFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Too long (max 20 chars)</small>';
+                return;
+            }
+            if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+                usernameFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Only letters, numbers, underscores</small>';
+                return;
+            }
+            
+            usernameFeedback.innerHTML = '<small class="text-info"><i class="fas fa-spinner fa-spin me-1"></i>Checking availability...</small>';
+            
+            usernameTimeout = setTimeout(() => {
+                fetch('/user/check-username/?username=' + encodeURIComponent(value))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.available) {
+                            usernameFeedback.innerHTML = '<small class="text-success"><i class="fas fa-check-circle me-1"></i>Username available</small>';
+                            username.classList.remove('is-invalid');
+                        } else {
+                            usernameFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>' + data.error + '</small>';
+                            username.classList.add('is-invalid');
+                        }
+                    })
+                    .catch(() => {
+                        usernameFeedback.innerHTML = '';
+                    });
+            }, 500);
+        });
+    }
+    
+    // Email validation and availability
+    const email = document.getElementById('email');
+    const emailFeedback = document.getElementById('email_feedback');
+    let emailTimeout;
+    
+    if (email) {
+        email.addEventListener('input', function() {
+            clearTimeout(emailTimeout);
+            const value = this.value;
+            
+            // Basic email format
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailRegex.test(value)) {
+                emailFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Invalid email format</small>';
+                return;
+            }
+            
+            emailFeedback.innerHTML = '<small class="text-info"><i class="fas fa-spinner fa-spin me-1"></i>Checking availability...</small>';
+            
+            emailTimeout = setTimeout(() => {
+                fetch('/user/check-email/?email=' + encodeURIComponent(value))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.available) {
+                            emailFeedback.innerHTML = '<small class="text-success"><i class="fas fa-check-circle me-1"></i>Email available</small>';
+                            email.classList.remove('is-invalid');
+                        } else {
+                            emailFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>' + data.error + '</small>';
+                            email.classList.add('is-invalid');
+                        }
+                    })
+                    .catch(() => {
+                        emailFeedback.innerHTML = '';
+                    });
+            }, 500);
+        });
+    }
+    
+    // File upload area
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('identity_doc');
+    const browseBtn = document.getElementById('browseBtn');
+    const fileFeedback = document.getElementById('file_feedback');
+    
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', function(e) {
+            if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+        
+        browseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fileInput.click();
+        });
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('highlight');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.classList.remove('highlight');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('highlight');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                validateFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                validateFile(this.files[0]);
+            } else {
+                resetFileUpload();
+            }
+        });
+        
+        function validateFile(file) {
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            const fileName = file.name;
+            const fileSize = file.size;
+            const fileExt = fileName.split('.').pop().toLowerCase();
+            
+            // Validate type
+            const allowedExts = ['pdf', 'jpg', 'jpeg', 'png'];
+            if (!allowedExts.includes(fileExt)) {
+                fileFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Invalid file type. Only PDF, JPG, JPEG, PNG allowed.</small>';
+                uploadArea.classList.remove('file-selected');
+                return false;
+            }
+            
+            // Validate size
+            if (fileSize > maxSize) {
+                const sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+                fileFeedback.innerHTML = `<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>File too large (${sizeMB}MB). Max 5MB.</small>`;
+                uploadArea.classList.remove('file-selected');
+                return false;
+            }
+            
+            // Success
+            const sizeKB = (fileSize / 1024).toFixed(1);
+            uploadArea.classList.add('file-selected');
+            uploadArea.querySelector('p').textContent = `Selected: ${fileName} (${sizeKB} KB)`;
+            fileFeedback.innerHTML = '<small class="text-success"><i class="fas fa-check-circle me-1"></i>File uploaded successfully</small>';
+            return true;
+        }
+        
+        function resetFileUpload() {
+            uploadArea.classList.remove('file-selected');
+            uploadArea.querySelector('p').textContent = 'Drag & drop your document here or click to browse';
+            fileFeedback.innerHTML = '';
+        }
+    }
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Check all required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+            if (field.type === 'file') {
+                if (field.files.length === 0) {
+                    fileFeedback.innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please upload your identity document</small>';
+                    uploadArea.classList.add('shake');
+                    setTimeout(() => uploadArea.classList.remove('shake'), 500);
+                    isValid = false;
+                }
+            } else if (!field.value) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            }
+        });
+        
+        // Check password match
+        if (password1 && password2 && password1.value !== password2.value) {
+            password2.classList.add('is-invalid');
+            document.getElementById('password_match_feedback').innerHTML = '<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Passwords do not match</small>';
+            isValid = false;
+        }
+        
+        // Check password strength
+        if (password1 && password1.value.length < 8) {
+            password1.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Check terms
+        const terms = document.getElementById('terms');
+        if (!terms.checked) {
+            terms.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            // Scroll to first error
+            const firstError = document.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+        
+        // Show loading
+        submitBtn.disabled = true;
+        loadingSpinner.classList.remove('d-none');
+    });
+});
+</script>
 {% endblock %}

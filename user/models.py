@@ -29,8 +29,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     country = models.CharField(max_length=50)
 
-    identydoc = models.FileField(upload_to='user_docs/', blank=True, null=True)
-    DOB = models.DateField(null=True, blank=True)
+    identity_doc = models.FileField(upload_to='user_docs/', blank=True, null=True)
+    dob = models.DateField(null=True, blank=True)
 
     status = models.CharField(max_length=20, default="active")
 
