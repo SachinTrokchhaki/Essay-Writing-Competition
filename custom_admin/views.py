@@ -24,6 +24,11 @@ from io import BytesIO
 import csv
 from datetime import datetime
 
+import os
+from django.conf import settings
+from competition.ml.linear_regression import EssayScorePredictor
+from competition.models import Essay
+
 # ========== HELPER FUNCTIONS ==========
 def is_admin(user):
     """Check if user is staff or superuser"""
@@ -1089,3 +1094,145 @@ def feedback_reply(request, pk):
         return redirect('custom_admin:feedback')
     
     return render(request, 'custom_admin/feedback_reply.html', {'feedback': feedback})
+
+
+# ========== MACHINE LEARNING VIEWS ==========
+
+@login_required(login_url='custom_admin:login')
+@user_passes_test(is_admin, login_url='custom_admin:login')
+def ml_dashboard(request):
+    """Admin dashboard for machine learning"""
+    
+    predictor = EssayScorePredictor()
+    
+    # Check if model exists
+    model_files = []
+    models_dir = os.path.join(settings.BASE_DIR, 'competition', 'ml', 'models')
+    if os.path.exists(models_dir):
+        model_files = [f for f in os.listdir(models_dir) if f.endswith('.joblib')]
+    
+    # Get essay statistics
+    total_essays = Essay.objects.filter(status='accepted').count()
+    
+    # Try to load latest model to check if trained
+    model_trained = False
+    if model_files:
+        try:
+            latest_model = sorted(model_files)[-1].replace('.joblib', '')
+            predictor.load_model(latest_model)
+            model_trained = predictor.model is not None
+        except:
+            pass
+    
+    context = {
+        'page_title': 'ML Dashboard',
+        'model_trained': model_trained,
+        'model_files': model_files,
+        'total_essays': total_essays,
+        'feature_names': predictor.feature_names,
+    }
+    
+    return render(request, 'custom_admin/ml_dashboard.html', context)
+
+
+@login_required(login_url='custom_admin:login')
+@user_passes_test(is_admin, login_url='custom_admin:login')
+def train_model(request):
+    """Train the ML model"""
+    if request.method == 'POST':
+        
+        predictor = EssayScorePredictor()
+        
+        # Get all accepted essays
+        essays = Essay.objects.filter(status='accepted', total_score__gt=0)
+        
+        if essays.count() < 5:
+            messages.error(request, f'Need at least 5 essays to train. Found {essays.count()}')
+            return redirect('custom_admin:ml_dashboard')
+        
+        # Train the model
+        results = predictor.train(essays)
+        
+        if results['success']:
+            # Save the model
+            model_path = predictor.save_model()
+            
+            # Show results
+            messages.success(
+                request, 
+                f'✅ Model trained successfully!\n'
+                f'• Total essays: {results["total_samples"]}\n'
+                f'• Train R²: {results["metrics"]["train"]["r2"]:.3f}\n'
+                f'• Test R²: {results["metrics"]["test"]["r2"]:.3f}'
+            )
+            
+            # Store results in session to display
+            request.session['train_results'] = {
+                'metrics': results['metrics'],
+                'feature_importance': results['feature_importance'],
+                'total_samples': results['total_samples']
+            }
+        else:
+            messages.error(request, results['message'])
+        
+        return redirect('custom_admin:ml_dashboard')
+    
+    return redirect('custom_admin:ml_dashboard')
+
+
+@login_required(login_url='custom_admin:login')
+@user_passes_test(is_admin, login_url='custom_admin:login')
+def view_model_results(request):
+    """View results of the last training"""
+    results = request.session.get('train_results')
+    
+    if not results:
+        messages.info(request, 'No training results found. Train a model first.')
+        return redirect('custom_admin:ml_dashboard')
+    
+    context = {
+        'page_title': 'Model Training Results',
+        'metrics': results['metrics'],
+        'feature_importance': results['feature_importance'],
+        'total_samples': results['total_samples'],
+    }
+    
+    return render(request, 'custom_admin/model_results.html', context)
+
+
+@login_required(login_url='custom_admin:login')
+@user_passes_test(is_admin, login_url='custom_admin:login')
+def predict_essay(request, pk):
+    """Predict score for a specific essay"""
+    
+    essay = get_object_or_404(Essay, pk=pk)
+    predictor = EssayScorePredictor()
+    
+    # Try to load the latest model
+    models_dir = os.path.join(settings.BASE_DIR, 'competition', 'ml', 'models')
+    if os.path.exists(models_dir):
+        model_files = [f for f in os.listdir(models_dir) if f.endswith('.joblib')]
+        if model_files:
+            latest_model = sorted(model_files)[-1].replace('.joblib', '')
+            try:
+                predictor.load_model(latest_model)
+            except:
+                pass
+    
+    if predictor.model is None:
+        messages.error(request, 'No trained model found. Train a model first.')
+        return redirect('custom_admin:ml_dashboard')
+    
+    try:
+        prediction = predictor.predict(essay)
+        
+        context = {
+            'essay': essay,
+            'prediction': prediction,
+            'actual_score': essay.total_score if essay.status == 'accepted' else None,
+        }
+        return render(request, 'custom_admin/prediction_result.html', context)
+    except Exception as e:
+        messages.error(request, f'Error making prediction: {str(e)}')
+        return redirect('custom_admin:ml_dashboard')
+

@@ -255,6 +255,11 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{% url 'custom_admin:ml_dashboard' %}" class="nav-link">
+                    <i class="fas fa-brain"></i>ML Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{% url 'custom_admin:competitions' %}" class="nav-link {% if request.resolver_match.url_name == 'competitions' %}active{% endif %}">
                     <i class="fas fa-trophy"></i> Competitions
                 </a>

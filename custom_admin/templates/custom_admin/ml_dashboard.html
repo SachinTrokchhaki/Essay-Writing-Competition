@@ -1,0 +1,127 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}ML Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-brain me-2"></i>
+                        Machine Learning Dashboard
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h5>Total Essays</h5>
+                                    <h2>{{ total_essays }}</h2>
+                                    <small>Accepted essays for training</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card {% if model_trained %}bg-success{% else %}bg-warning{% endif %} text-white">
+                                <div class="card-body">
+                                    <h5>Model Status</h5>
+                                    <h2>
+                                        {% if model_trained %}
+                                            <i class="fas fa-check-circle"></i> Trained
+                                        {% else %}
+                                            <i class="fas fa-times-circle"></i> Not Trained
+                                        {% endif %}
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-secondary text-white">
+                                <div class="card-body">
+                                    <h5>Saved Models</h5>
+                                    <h2>{{ model_files|length }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="btn-group">
+                                <form method="post" action="{% url 'custom_admin:train_model' %}" class="d-inline me-2">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary" {% if total_essays < 5 %}disabled{% endif %}>
+                                        <i class="fas fa-play me-2"></i>
+                                        Train New Model
+                                    </button>
+                                </form>
+                                <a href="{% url 'custom_admin:model_results' %}" class="btn btn-info me-2">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    View Last Results
+                                </a>
+                            </div>
+                            {% if total_essays < 5 %}
+                                <p class="text-danger mt-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Need at least 5 accepted essays to train. Currently have {{ total_essays }}.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Feature Information -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Features Used for Prediction</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for feature in feature_names %}
+                                <div class="col-md-3 mb-2">
+                                    <span class="badge bg-light text-dark p-2" style="font-size: 0.9rem;">
+                                        <i class="fas fa-chart-line me-1 text-primary"></i>
+                                        {{ feature|title|cut:"_" }}
+                                    </span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Saved Models List -->
+                    {% if model_files %}
+                    <div class="card mt-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Saved Models</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Model Name</th>
+                                        <th>Created</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for model in model_files %}
+                                    <tr>
+                                        <td>{{ model }}</td>
+                                        <td>{{ model|cut:"essay_predictor_"|cut:".joblib" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

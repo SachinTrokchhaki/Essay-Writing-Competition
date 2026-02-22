@@ -42,4 +42,10 @@ urlpatterns = [
     path('feedback/', views.feedback, name='feedback'),
     path('feedback/<int:pk>/', views.feedback_detail, name='feedback_detail'),
     path('feedback/<int:pk>/reply/', views.feedback_reply, name='feedback_reply'),
+    
+    #ml linear regression
+    path('ml/dashboard/', views.ml_dashboard, name='ml_dashboard'),
+    path('ml/train/', views.train_model, name='train_model'),
+    path('ml/results/', views.view_model_results, name='model_results'),
+    path('ml/predict/<int:pk>/', views.predict_essay, name='predict_essay'),
 ]

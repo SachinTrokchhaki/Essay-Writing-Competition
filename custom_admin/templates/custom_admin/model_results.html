@@ -1,0 +1,128 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Model Results{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Model Training Results
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <a href="{% url 'custom_admin:ml_dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Trained on <strong>{{ total_samples }}</strong> essays
+                    </div>
+
+                    <div class="row">
+                        <!-- Training Metrics -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5>Training Metrics</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table">
+                                        <tr>
+                                            <th>R² Score:</th>
+                                            <td><strong>{{ metrics.train.r2|floatformat:3 }}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <th>RMSE:</th>
+                                            <td>{{ metrics.train.rmse|floatformat:2 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>MAE:</th>
+                                            <td>{{ metrics.train.mae|floatformat:2 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Samples:</th>
+                                            <td>{{ metrics.train.samples }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Testing Metrics -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5>Testing Metrics</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table">
+                                        <tr>
+                                            <th>R² Score:</th>
+                                            <td><strong>{{ metrics.test.r2|floatformat:3 }}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <th>RMSE:</th>
+                                            <td>{{ metrics.test.rmse|floatformat:2 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>MAE:</th>
+                                            <td>{{ metrics.test.mae|floatformat:2 }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Samples:</th>
+                                            <td>{{ metrics.test.samples }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature Importance -->
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5>Feature Importance</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Feature</th>
+                                            <th>Importance (%)</th>
+                                            <th>Progress</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for feature, importance in feature_importance.items %}
+                                        <tr>
+                                            <td>{{ feature|title|cut:"_" }}</td>
+                                            <td>{{ importance|floatformat:1 }}%</td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar" style="width: {{ importance }}%">
+                                                        {{ importance|floatformat:1 }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
