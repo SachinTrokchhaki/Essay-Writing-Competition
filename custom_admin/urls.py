@@ -48,4 +48,8 @@ urlpatterns = [
     path('ml/train/', views.train_model, name='train_model'),
     path('ml/results/', views.view_model_results, name='model_results'),
     path('ml/predict/<int:pk>/', views.predict_essay, name='predict_essay'),
+    
+    #prediction result
+    path('essay/predict/<int:pk>/', views.predict_single_essay, name='predict_single_essay'),
+    path('essays/predict-all/', views.predict_all_essays, name='predict_all_essays'),
 ]

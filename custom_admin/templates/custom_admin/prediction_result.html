@@ -1,0 +1,104 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block page_title %}Prediction Result{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Score Prediction for: {{ essay.title|truncatechars:50 }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <a href="{% url 'custom_admin:essay_detail' essay.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Essay
+                        </a>
+                        <a href="{% url 'custom_admin:ml_dashboard' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-brain me-2"></i> ML Dashboard
+                        </a>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h5>Predicted Score</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="display-1 fw-bold text-primary">{{ prediction.predicted_score|floatformat:1 }}</div>
+                                    <p class="text-muted">out of 100</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if actual_score %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h5>Actual Score</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="display-1 fw-bold text-success">{{ actual_score|floatformat:1 }}</div>
+                                    <p class="text-muted">out of 100</p>
+                                    <div class="alert alert-info mt-3">
+                                        <strong>Difference:</strong> 
+                                        {{ prediction.predicted_score|floatformat:1|add:"-"|add:actual_score|floatformat:1 }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Feature Breakdown -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5>Feature Breakdown</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Feature</th>
+                                            <th>Value</th>
+                                            <th>Impact</th>
+                                        </thead>
+                                    <tbody>
+                                        {% for feature, value in prediction.features.items %}
+                                        <tr>
+                                            <td><strong>{{ feature|title|cut:"_" }}</strong></td>
+                                            <td>
+                                                {% if value < 1 and value > 0 %}
+                                                    {{ value|floatformat:3 }}
+                                                {% else %}
+                                                    {{ value|floatformat:0 }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if feature == 'word_count' %}
+                                                    {% if value > 300 %}Positive{% elif value < 100 %}Negative{% else %}Neutral{% endif %}
+                                                {% elif feature == 'paragraph_count' %}
+                                                    {% if value >= 3 and value <= 5 %}Positive{% elif value < 2 %}Negative{% else %}Neutral{% endif %}
+                                                {% else %}
+                                                    Neutral
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1236,3 +1236,95 @@ def predict_essay(request, pk):
         messages.error(request, f'Error making prediction: {str(e)}')
         return redirect('custom_admin:ml_dashboard')
 
+# ========== PREDICTION VIEWS ==========
+@login_required(login_url='custom_admin:login')
+@user_passes_test(is_admin, login_url='custom_admin:login')
+def predict_single_essay(request, pk):
+    """Predict score for a single essay"""
+    from competition.ml.linear_regression import EssayScorePredictor
+    from competition.models import Essay
+    import os
+    from django.conf import settings
+    
+    essay = get_object_or_404(Essay, pk=pk)
+    predictor = EssayScorePredictor()
+    
+    # Load the latest model
+    models_dir = os.path.join(settings.BASE_DIR, 'competition', 'ml', 'models')
+    if os.path.exists(models_dir):
+        model_files = [f for f in os.listdir(models_dir) if f.endswith('.joblib')]
+        if model_files:
+            latest_model = sorted(model_files)[-1].replace('.joblib', '')
+            try:
+                predictor.load_model(latest_model)
+            except Exception as e:
+                messages.error(request, f'Error loading model: {str(e)}')
+                return redirect('custom_admin:essay_detail', pk=pk)
+    
+    if predictor.model is None:
+        messages.error(request, 'No trained model found. Train a model first.')
+        return redirect('custom_admin:ml_dashboard')
+    
+    try:
+        prediction = predictor.predict(essay)
+        
+        context = {
+            'essay': essay,
+            'prediction': prediction,
+            'actual_score': essay.total_score if essay.status == 'accepted' else None,
+        }
+        return render(request, 'custom_admin/prediction_result.html', context)
+    except Exception as e:
+        messages.error(request, f'Error making prediction: {str(e)}')
+        return redirect('custom_admin:essay_detail', pk=pk)
+
+
+@login_required(login_url='custom_admin:login')
+@user_passes_test(is_admin, login_url='custom_admin:login')
+def predict_all_essays(request):
+    """Predict scores for all essays"""
+    from competition.ml.linear_regression import EssayScorePredictor
+    from competition.models import Essay
+    import os
+    from django.conf import settings
+    
+    predictor = EssayScorePredictor()
+    
+    # Load the latest model
+    models_dir = os.path.join(settings.BASE_DIR, 'competition', 'ml', 'models')
+    if os.path.exists(models_dir):
+        model_files = [f for f in os.listdir(models_dir) if f.endswith('.joblib')]
+        if model_files:
+            latest_model = sorted(model_files)[-1].replace('.joblib', '')
+            try:
+                predictor.load_model(latest_model)
+            except:
+                pass
+    
+    if predictor.model is None:
+        messages.error(request, 'No trained model found. Train a model first.')
+        return redirect('custom_admin:ml_dashboard')
+    
+    # Get all essays
+    essays = Essay.objects.all().order_by('-created_at')
+    predictions = []
+    
+    for essay in essays:
+        try:
+            pred = predictor.predict(essay)
+            predictions.append({
+                'essay': essay,
+                'predicted_score': pred['predicted_score'],
+                'actual_score': essay.total_score if essay.status == 'accepted' else None,
+                'features': pred['features']
+            })
+        except Exception as e:
+            print(f"Error predicting essay {essay.id}: {e}")
+    
+    context = {
+        'predictions': predictions,
+        'total': len(predictions),
+        'model_used': latest_model if 'latest_model' in dir() else 'Unknown'
+    }
+    return render(request, 'custom_admin/bulk_predictions.html', context)
+

@@ -3,6 +3,14 @@
 {% block page_title %}Manage Essays{% endblock %}
 
 {% block content %}
+<div class="mb-3">
+    <a href="{% url 'custom_admin:predict_all_essays' %}" class="btn btn-info">
+        <i class="fas fa-chart-line"></i> Predict All Essays
+    </a>
+    <a href="{% url 'custom_admin:ml_dashboard' %}" class="btn btn-primary">
+        <i class="fas fa-brain"></i> ML Dashboard
+    </a>
+</div>
 <!-- Filters -->
 <div class="table-container mb-3">
     <form method="get" class="row g-3">

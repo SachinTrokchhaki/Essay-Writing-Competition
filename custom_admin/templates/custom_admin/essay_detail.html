@@ -168,6 +168,9 @@
                     <a href="{% url 'custom_admin:essay_delete' essay.id %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this essay?')">
                         <i class="fas fa-trash"></i> Delete
                     </a>
+                    <a href="{% url 'custom_admin:predict_single_essay' essay.id %}" class="btn btn-info">
+                        <i class="fas fa-chart-line"></i> Predict Score
+                    </a>
                 </div>
             </div>
         </div>
