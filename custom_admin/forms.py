@@ -7,11 +7,13 @@ from user.models import CustomUser
 class EssayCompetitionForm(forms.ModelForm):
     class Meta:
         model = EssayCompetition
-        fields = ['title', 'description', 'deadline', 'min_words', 'max_words', 'is_active']
+        fields = ['title', 'description', 'deadline', 'eligibility', 'prize', 'min_words', 'max_words', 'is_active']
         widgets = {
-            'deadline': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'deadline': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'description': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
             'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'eligibility': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Open to all students aged 15-25'}),
+            'prize': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 1st: NPR 50000 | 2nd: NPR 30000 | 3rd: NPR 20000'}),
             'min_words': forms.NumberInput(attrs={'class': 'form-control'}),
             'max_words': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
